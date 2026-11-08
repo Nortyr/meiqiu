@@ -91,6 +91,10 @@ Longer term is agent engineering — building on top of mature harnesses instead
 
 No promises on order or dates — this is a personal project.
 
+## Contact
+
+Issues are welcome, or reach me at imchenhui@outlook.com.
+
 ## License
 
 [MIT](LICENSE)

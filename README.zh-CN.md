@@ -91,6 +91,10 @@ MeiQiu 是 vibe coding 写出来的——迭代过程中主要由 AI agent（Kir
 
 个人项目，不承诺顺序和时间。
 
+## 联系
+
+有问题或建议欢迎提 Issue，也可以发邮件：imchenhui@outlook.com
+
 ## License
 
 [MIT](LICENSE)

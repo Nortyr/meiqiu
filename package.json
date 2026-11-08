@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Manage memories, sessions, and a personal wiki across your AI coding agents (Kiro, Claude Code, Codex, opencode) — macOS desktop app",
   "main": "./out/main/index.js",
-  "author": "chenhui",
+  "author": "chenhui <imchenhui@outlook.com>",
   "license": "MIT",
   "private": true,
   "scripts": {
