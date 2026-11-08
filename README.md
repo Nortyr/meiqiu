@@ -1,5 +1,7 @@
 # MeiQiu
 
+English | [中文](README.zh-CN.md)
+
 A macOS desktop app that puts all your AI coding agents' memories, sessions, and a personal knowledge wiki in one place.
 
 It works with the agents you already use — **Kiro**, **Claude Code**, **Codex**, and **opencode** — reading their data files directly (read-only). Your data never leaves your machine.
