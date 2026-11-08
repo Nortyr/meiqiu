@@ -73,13 +73,21 @@ Electron + React + TypeScript，SQLite 用 Node 自带的 `node:sqlite`（没有
 
 ## 背景
 
-MeiQiu 是 vibe coding 写出来的——迭代过程中主要由 AI agent（Kiro 和 Claude Code）动手写码。它最初是工作中积累的几个常用小脚本（读 Kiro 的记忆库、翻 Claude Code 的会话文件、冻结会话转写用于提炼），后来合并成了一个 app。设计和架构决策是人做的，大量代码是 agent 写、人审的。
+MeiQiu 是 vibe coding 写出来的——迭代过程中主要由 AI agent（Kiro 和 Claude Code）动手写码。**它最初是工作中积累的几个常用小脚本（读 Kiro 的记忆库、翻 Claude Code 的会话文件、冻结会话转写用于提炼）**，后来合并成了一个 app。设计和架构决策是人做的，大量代码是 agent 写、人审的。
 
 ## 后续（暂定）
 
+近期：
+
 - 记忆的修改和删除（目前是只读），写之前先备份。
 - MCP server：让任何 agent 都能检索你的知识库和跨 agent 记忆，作为上下文。
-- 可选的、选择性的会话上传（agent memory 客户端）。
+- agent memory：可选的、选择性的会话上传客户端。
+
+长期方向是 agent 工程——不自己造 harness，在各家成熟 harness 之上做：
+
+- superagent：一个入口调度多家 agent。
+- loop engineering：agent 循环的编排和观测。
+- graph engineering：agent 工作流图。
 
 个人项目，不承诺顺序和时间。
 

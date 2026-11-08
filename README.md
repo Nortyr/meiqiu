@@ -73,13 +73,21 @@ Everything stays on your machine. MeiQiu reads your agents' memory and session f
 
 ## Background
 
-MeiQiu was vibe-coded — built iteratively with AI agents (mostly Kiro and Claude Code) doing the typing. It started as several small utility scripts I kept reaching for at work (reading Kiro's memory DB, digging through Claude Code session files, freezing session transcripts for distillation), which eventually merged into one app. The design and architecture decisions are human; a lot of the code is agent-written and human-reviewed.
+MeiQiu was vibe-coded — built iteratively with AI agents (mostly Kiro and Claude Code) doing the typing. **It started as several small utility scripts I kept reaching for at work (reading Kiro's memory DB, digging through Claude Code session files, freezing session transcripts for distillation), which eventually merged into one app. **The design and architecture decisions are human; a lot of the code is agent-written and human-reviewed.
 
 ## What's next (tentative)
 
+Near term:
+
 - Edit & delete memories (currently read-only), with backup-before-write.
 - An MCP server so any agent can search your wiki and cross-agent memories as context.
-- Optional, selective session upload (agent-memory client).
+- Agent memory: an opt-in, selective session upload client.
+
+Longer term is agent engineering — building on top of mature harnesses instead of reinventing them:
+
+- Superagent: one entry point that orchestrates multiple agents.
+- Loop engineering: orchestrating and observing agent loops.
+- Graph engineering: agent workflow graphs.
 
 No promises on order or dates — this is a personal project.
 
