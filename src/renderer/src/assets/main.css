@@ -456,11 +456,59 @@ body {
   background: var(--panel-bg);
 }
 
-.products.inline {
-  border-top: none;
-  border-bottom: 1px solid var(--border);
-  max-height: 140px;
-  padding: 8px 24px;
+.skills-toggle.open {
+  background: var(--panel-bg);
+}
+
+/* skill 浮层：锚在头部按钮下方，不推挤对话区 */
+.skills-anchor {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.skills-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 340px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  z-index: 30;
+}
+
+.skills-pop-search {
+  width: 100%;
+  border: none;
+  background: var(--panel-bg);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+  outline: none;
+  margin-bottom: 6px;
+}
+
+.skills-pop-list {
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.skills-pop-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: default;
+}
+
+.skills-pop-row:hover {
+  background: var(--panel-bg);
 }
 
 .tree-pane {

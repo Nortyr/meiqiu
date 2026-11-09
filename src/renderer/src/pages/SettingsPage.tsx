@@ -12,6 +12,12 @@ const MODEL_OPTIONS = [
   { value: '__custom__', labelKey: 'modelCustom' }
 ] as const
 
+const PROVIDER_LABELS: Record<'claude-code' | 'opencode' | 'codex', string> = {
+  'claude-code': 'Claude Code',
+  opencode: 'OpenCode',
+  codex: 'Codex'
+}
+
 function SettingsPage(): React.JSX.Element {
   const { settings, save: saveSettings, t } = useSettings()
   const [harnessPath, setHarnessPath] = useState('')
@@ -32,15 +38,17 @@ function SettingsPage(): React.JSX.Element {
       const preset = MODEL_OPTIONS.some((o) => o.value === settings.acpModel)
       setModelChoice(preset ? settings.acpModel : '__custom__')
       setCustomModel(preset ? '' : settings.acpModel)
-      setOcModel(settings.acpOpencodeModel)
+      setOcModel(
+        settings.acpProvider === 'codex' ? settings.acpCodexModel : settings.acpOpencodeModel
+      )
     }
   }
 
-  // OpenCode 模型列表要从 ACP 连接上拿（未连接时为空）
+  // opencode/codex 的模型列表要从 ACP 连接上拿（未连接时为空）
   const provider = settings?.acpProvider ?? 'claude-code'
   const acpEnabled = settings?.acpEnabled ?? false
   useEffect(() => {
-    if (provider !== 'opencode' || !acpEnabled) return
+    if (provider === 'claude-code' || !acpEnabled) return
     window.api.acpModels().then((m) => {
       setOcModels(m)
       if (m) {
@@ -51,7 +59,7 @@ function SettingsPage(): React.JSX.Element {
 
   if (!settings) return <Loading />
 
-  const providerLabel = provider === 'opencode' ? 'OpenCode' : 'Claude Code'
+  const providerLabel = PROVIDER_LABELS[provider]
   const detected = settings.detectedHarnessPath
 
   const save = (patch: Parameters<typeof saveSettings>[0]): void => {
@@ -107,6 +115,12 @@ function SettingsPage(): React.JSX.Element {
         >
           OpenCode
         </button>
+        <button
+          className={`tab ${provider === 'codex' ? 'active' : ''}`}
+          onClick={() => save({ acpProvider: 'codex' })}
+        >
+          Codex
+        </button>
       </div>
       <div className="settings-card">
         {/* 启用 */}
@@ -160,7 +174,11 @@ function SettingsPage(): React.JSX.Element {
                   }}
                   placeholder={
                     detected ||
-                    (provider === 'opencode' ? '/usr/local/bin/opencode' : '/usr/local/bin/claude')
+                    (provider === 'opencode'
+                      ? '/usr/local/bin/opencode'
+                      : provider === 'codex'
+                        ? '/usr/local/bin/codex'
+                        : '/usr/local/bin/claude')
                   }
                 />
               </div>
@@ -212,12 +230,12 @@ function SettingsPage(): React.JSX.Element {
               </div>
             )}
 
-            {/* OpenCode 的模型：走 ACP 下发，只影响煤球起的会话 */}
-            {provider === 'opencode' && (
+            {/* opencode/codex 的模型：走 ACP 下发，只影响煤球起的会话 */}
+            {provider !== 'claude-code' && (
               <div className="setting-item">
                 <div className="setting-info">
                   <div className="setting-name">{t.settings.model}</div>
-                  <div className="setting-desc">{t.settings.modelDescOpencode}</div>
+                  <div className="setting-desc">{t.settings.modelDescAcp(providerLabel)}</div>
                 </div>
                 <div className="setting-control">
                   {ocModels ? (
@@ -262,9 +280,14 @@ function SettingsPage(): React.JSX.Element {
                 disabled={busy}
                 onClick={() =>
                   save({
-                    [provider === 'opencode' ? 'acpOpencodePath' : 'acpHarnessPath']: harnessPath,
+                    [provider === 'opencode'
+                      ? 'acpOpencodePath'
+                      : provider === 'codex'
+                        ? 'acpCodexPath'
+                        : 'acpHarnessPath']: harnessPath,
                     acpModel: modelChoice === '__custom__' ? customModel : modelChoice,
-                    acpOpencodeModel: ocModel
+                    acpOpencodeModel: provider === 'opencode' ? ocModel : settings.acpOpencodeModel,
+                    acpCodexModel: provider === 'codex' ? ocModel : settings.acpCodexModel
                   })
                 }
               >

@@ -16,7 +16,33 @@ function ChatView({
   const { t } = useSettings()
   const chat = useChat()
   const [reportOpen, setReportOpen] = useState(false)
+  const [skillQuery, setSkillQuery] = useState('')
   const bodyRef = useRef<HTMLDivElement>(null)
+  const skillsRef = useRef<HTMLDivElement>(null)
+
+  // 关闭浮层时顺带清空搜索词
+  const closeSkills = (): void => {
+    setSkillQuery('')
+    chat.toggleSkills()
+  }
+
+  // skill 浮层：点外面 / Esc 关闭
+  useEffect(() => {
+    if (!chat.showSkills) return
+    const onDown = (e: MouseEvent): void => {
+      if (!skillsRef.current?.contains(e.target as Node)) closeSkills()
+    }
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') closeSkills()
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chat.showSkills])
 
   // 聊天消息自动滚到底部
   useEffect(() => {
@@ -44,9 +70,38 @@ function ChatView({
             {t.chat.cancelTask}
           </button>
         )}
-        <button className="skills-toggle" onClick={chat.toggleSkills}>
-          {t.chat.skillsToggle(chat.skills.length)} {chat.showSkills ? '▾' : '▸'}
-        </button>
+        <div className="skills-anchor" ref={skillsRef}>
+          <button
+            className={`skills-toggle ${chat.showSkills ? 'open' : ''}`}
+            onClick={chat.showSkills ? closeSkills : chat.toggleSkills}
+          >
+            {t.chat.skillsToggle(chat.skills.length)} {chat.showSkills ? '▴' : '▾'}
+          </button>
+          {chat.showSkills && (
+            <div className="skills-pop">
+              <input
+                className="skills-pop-search"
+                autoFocus
+                placeholder={t.chat.skillsSearch}
+                value={skillQuery}
+                onChange={(e) => setSkillQuery(e.target.value)}
+              />
+              <div className="skills-pop-list">
+                {chat.skills.length === 0 && <p className="muted small">{t.chat.noSkills}</p>}
+                {chat.skills
+                  .filter((s) =>
+                    `${s.name} ${s.description}`.toLowerCase().includes(skillQuery.toLowerCase())
+                  )
+                  .map((s) => (
+                    <div key={s.path} className="skills-pop-row" title={s.path}>
+                      <span className="product-name">{s.name}</span>
+                      <span className="muted small product-desc">{s.description}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
       </DetailHeader>
       {report && (
         <div className={`ingest-report ${report.errors.length > 0 ? 'has-error' : ''}`}>
@@ -102,17 +157,6 @@ function ChatView({
                 report.errors.length === 0 && <p className="muted small">{t.chat.noChanges}</p>}
             </div>
           )}
-        </div>
-      )}
-      {chat.showSkills && (
-        <div className="products inline">
-          {chat.skills.length === 0 && <p className="muted small">{t.chat.noSkills}</p>}
-          {chat.skills.map((s) => (
-            <div key={s.path} className="product-row">
-              <span className="product-name">{s.name}</span>
-              <span className="muted small product-desc">{s.description}</span>
-            </div>
-          ))}
         </div>
       )}
       <div className="conv-body" ref={bodyRef}>

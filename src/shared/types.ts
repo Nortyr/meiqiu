@@ -70,25 +70,31 @@ export interface SessionContentResult {
 // 界面语言：'' = 跟随系统
 export type Locale = 'zh' | 'en'
 
+// 支持 ACP 连接的 provider
+export type AcpProvider = 'claude-code' | 'opencode' | 'codex'
+
 // 设置
 export interface SettingsResult {
   acpEnabled: boolean // 当前选中的那家（acpProvider）的开关，各家独立存
   connected: boolean
-  acpProvider: 'claude-code' | 'opencode'
+  acpProvider: AcpProvider
   acpHarnessPath: string // 用户配置的 CLI 位置，空 = 自动检测
   detectedHarnessPath: string // 自动检测到的 CLI 位置
   acpModel: string
   acpOpencodeModel: string // OpenCode 的模型（走 ACP 下发），空 = 用 opencode 自己的默认
+  acpCodexModel: string // Codex 的模型（走 ACP 下发），空 = 用 codex 自己的默认
   locale: Locale | '' // 界面语言，空 = 跟随系统
 }
 
 export interface AcpConfigPatch {
   acpEnabled?: boolean // 设置的是当时选中那家的开关
-  acpProvider?: 'claude-code' | 'opencode'
+  acpProvider?: AcpProvider
   acpHarnessPath?: string // Claude CLI 路径
   acpOpencodePath?: string // OpenCode CLI 路径
+  acpCodexPath?: string // Codex CLI 路径
   acpModel?: string
   acpOpencodeModel?: string
+  acpCodexModel?: string
   locale?: Locale | '' // 界面语言，'' = 跟随系统
 }
 

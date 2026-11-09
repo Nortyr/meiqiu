@@ -2,26 +2,35 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { execSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { homedir } from 'node:os'
-import type { Locale, SettingsResult } from '../shared/types'
+import type { AcpProvider, Locale, SettingsResult } from '../shared/types'
 
 // 用户设置持久化在 ~/.meiqiu/settings.json
 const SETTINGS_PATH = join(homedir(), '.meiqiu', 'settings.json')
 
 export interface AcpConfig {
-  acpProvider?: 'claude-code' | 'opencode'
+  acpProvider?: AcpProvider
   acpEnabledClaudeCode?: boolean // Claude Code 的开关，各家独立
   acpEnabledOpencode?: boolean // OpenCode 的开关，各家独立
+  acpEnabledCodex?: boolean // Codex 的开关，各家独立
   acpHarnessPath?: string // Claude CLI 路径
   acpOpencodePath?: string // OpenCode CLI 路径
+  acpCodexPath?: string // Codex CLI 路径
   acpModel?: string
   acpOpencodeModel?: string // OpenCode 的模型，连上后走 ACP 下发
+  acpCodexModel?: string // Codex 的模型，连上后走 ACP 下发
   acpEnabled?: boolean // 旧版全局开关，读取时迁移掉
   wikiVaultPath?: string // 知识库 vault 位置，空 = ~/.meiqiu/vault
   locale?: Locale | '' // 界面语言，空/缺省 = 跟随系统
 }
 
+const PATH_KEYS: Record<AcpProvider, 'acpHarnessPath' | 'acpOpencodePath' | 'acpCodexPath'> = {
+  'claude-code': 'acpHarnessPath',
+  opencode: 'acpOpencodePath',
+  codex: 'acpCodexPath'
+}
+
 export function harnessPathOf(s: AcpConfig): string {
-  return (s.acpProvider === 'opencode' ? s.acpOpencodePath : s.acpHarnessPath) ?? ''
+  return s[PATH_KEYS[s.acpProvider ?? 'claude-code']] ?? ''
 }
 
 function readFile(): AcpConfig {
@@ -33,7 +42,7 @@ function readFile(): AcpConfig {
   }
   // 旧版只有一个全局 acpEnabled：迁移成当时选中那家的开关
   if (s.acpEnabled !== undefined) {
-    const key = s.acpProvider === 'opencode' ? 'acpEnabledOpencode' : 'acpEnabledClaudeCode'
+    const key = ENABLED_KEYS[s.acpProvider ?? 'claude-code']
     if (s[key] === undefined) s[key] = s.acpEnabled
     delete s.acpEnabled
   }
@@ -44,8 +53,17 @@ export function getSettings(): AcpConfig {
   return readFile()
 }
 
-function enabledOf(s: AcpConfig, provider: 'claude-code' | 'opencode'): boolean {
-  return provider === 'opencode' ? s.acpEnabledOpencode === true : s.acpEnabledClaudeCode === true
+const ENABLED_KEYS: Record<
+  AcpProvider,
+  'acpEnabledClaudeCode' | 'acpEnabledOpencode' | 'acpEnabledCodex'
+> = {
+  'claude-code': 'acpEnabledClaudeCode',
+  opencode: 'acpEnabledOpencode',
+  codex: 'acpEnabledCodex'
+}
+
+function enabledOf(s: AcpConfig, provider: AcpProvider): boolean {
+  return s[ENABLED_KEYS[provider]] === true
 }
 
 // 当前选中的那家是否启用（决定连不连、输入条出不出现）
@@ -62,24 +80,24 @@ export function saveSettings(patch: AcpConfig): void {
   delete next.acpEnabled
   if (acpEnabled !== undefined) {
     const provider = rest.acpProvider ?? s.acpProvider ?? 'claude-code'
-    if (provider === 'opencode') next.acpEnabledOpencode = acpEnabled
-    else next.acpEnabledClaudeCode = acpEnabled
+    next[ENABLED_KEYS[provider]] = acpEnabled
   }
   mkdirSync(join(homedir(), '.meiqiu'), { recursive: true })
   writeFileSync(SETTINGS_PATH, JSON.stringify(next, null, 2))
 }
 
 // PATH 里找不到时的常见安装位置
-const HARNESS_CANDIDATES: Record<'claude' | 'opencode', string[]> = {
+const HARNESS_CANDIDATES: Record<'claude' | 'opencode' | 'codex', string[]> = {
   claude: [],
   opencode: [
     join(homedir(), '.opencode/bin/opencode'), // 官方安装脚本
     '/Applications/OpenCode.app/Contents/Resources/opencode-cli' // 桌面版自带
-  ]
+  ],
+  codex: []
 }
 
 // 自动检测 CLI 的位置：先 PATH，再常见安装位置
-export function detectHarnessPath(bin: 'claude' | 'opencode'): string {
+export function detectHarnessPath(bin: 'claude' | 'opencode' | 'codex'): string {
   try {
     const found = execSync(`which ${bin}`, { encoding: 'utf8' }).trim()
     if (found) return found
@@ -99,14 +117,22 @@ export function acpEnv(): Record<string, string> {
   // 用户配了 CLI 的位置就把它所在目录放到 PATH 最前
   const hp = harnessPathOf(s).trim()
   if (hp) env.PATH = `${dirname(hp)}:${process.env.PATH ?? ''}`
-  // 模型只对 Claude Code 生效；opencode 的模型在它自己的配置里管
-  if (s.acpModel?.trim() && s.acpProvider !== 'opencode') {
+  // 模型只对 Claude Code 生效；opencode/codex 的模型走 ACP 下发
+  if (s.acpModel?.trim() && (s.acpProvider ?? 'claude-code') === 'claude-code') {
     env.ANTHROPIC_MODEL = s.acpModel.trim()
   }
   return env
 }
 
-export function acpProvider(): 'claude-code' | 'opencode' {
+// 各家在 app 里配的、要走 ACP configOptions 下发的模型（Claude Code 没有，走环境变量）
+export function acpSavedModel(provider: AcpProvider): string {
+  const s = readFile()
+  if (provider === 'opencode') return s.acpOpencodeModel?.trim() ?? ''
+  if (provider === 'codex') return s.acpCodexModel?.trim() ?? ''
+  return ''
+}
+
+export function acpProvider(): AcpProvider {
   return readFile().acpProvider ?? 'claude-code'
 }
 
@@ -118,9 +144,12 @@ export function toResult(connected: boolean): SettingsResult {
     connected,
     acpProvider: provider,
     acpHarnessPath: harnessPathOf(s),
-    detectedHarnessPath: detectHarnessPath(provider === 'opencode' ? 'opencode' : 'claude'),
+    detectedHarnessPath: detectHarnessPath(
+      provider === 'opencode' ? 'opencode' : provider === 'codex' ? 'codex' : 'claude'
+    ),
     acpModel: s.acpModel ?? '',
     acpOpencodeModel: s.acpOpencodeModel ?? '',
+    acpCodexModel: s.acpCodexModel ?? '',
     locale: s.locale ?? ''
   }
 }

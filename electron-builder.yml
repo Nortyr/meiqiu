@@ -20,6 +20,9 @@ extraResources:
   - from: resources/wiki-lint
     to: wiki-lint
 mac:
+  # 没有开发者证书时用完整 ad-hoc 签名（codesign --sign -），
+  # 避免 Apple Silicon 上提示「已损坏」，用户可通过「仍要打开」放行
+  identity: null
   entitlementsInherit: build/entitlements.mac.plist
   notarize: false
 dmg:

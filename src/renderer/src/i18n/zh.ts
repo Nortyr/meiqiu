@@ -66,7 +66,8 @@ export const zh = {
         ? `把 ${agent} 的会话「${title}」摄入知识库`
         : `从 ${agent} 的会话「${title}」提取 skill`,
     cancelTask: '取消任务',
-    skillsToggle: (n: number) => `已提取 ${n} 个 skill`,
+    skillsToggle: (n: number) => `~/.claude/skills · ${n} 个`,
+    skillsSearch: '搜索 skill…',
     directChat: '直接对话',
     reportRolledBack: '已回滚到摄入前的状态',
     reportSummary: (created: number, updated: number, warnings: number, errors: number) =>
@@ -79,7 +80,7 @@ export const zh = {
     createdPages: (list: string) => `新建：${list}`,
     updatedPages: (list: string) => `更新：${list}`,
     noChanges: 'agent 没有改动任何页面',
-    noSkills: '还没有产物',
+    noSkills: '目录里没有 skill',
     contextPrefix: (path: string, agent: string, text: string) =>
       `请阅读会话文件 ${path}（这是 ${agent} 的历史会话），然后回答：${text}`
   },
@@ -144,7 +145,8 @@ export const zh = {
       `${label} CLI 的自定义路径。留空使用自动检测${detected ? `（当前：${detected}）` : ''}。`,
     model: '模型',
     modelDescClaude: '提取 skill 和对话用的模型，默认由 Claude Code 决定。',
-    modelDescOpencode: '通过 ACP 下发给 OpenCode，只影响煤球起的会话，不改 OpenCode 自己的配置。',
+    modelDescAcp: (label: string) =>
+      `通过 ACP 下发给 ${label}，只影响煤球起的会话，不改 ${label} 自己的配置。`,
     modelDefault: '默认',
     modelCustom: '自定义…',
     customModel: '自定义模型',

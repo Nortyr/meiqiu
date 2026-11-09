@@ -2,7 +2,14 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { EventEmitter } from 'node:events'
 import type { ChatEvent } from '../../shared/types'
-import { acpEnv, acpProvider, detectHarnessPath, getSettings, harnessPathOf } from '../settings'
+import {
+  acpEnv,
+  acpProvider,
+  acpSavedModel,
+  detectHarnessPath,
+  harnessPathOf,
+  getSettings
+} from '../settings'
 import { mainT } from '../i18n'
 
 // ACP（Agent Client Protocol）客户端：spawn claude-agent-acp 子进程，
@@ -91,11 +98,15 @@ export class AcpClient extends EventEmitter {
         stdio: ['pipe', 'pipe', 'pipe']
       })
     } else {
+      // claude-code / codex 走 npm 的 ACP adapter，用 Electron 当 Node 跑
+      // acpEnv() 是用户在设置里填的 CLI 路径 / 模型
       const require = createRequire(import.meta.url)
-      const bin = require.resolve('@agentclientprotocol/claude-agent-acp/dist/index.js')
+      const pkg =
+        provider === 'codex'
+          ? '@agentclientprotocol/codex-acp/dist/index.js'
+          : '@agentclientprotocol/claude-agent-acp/dist/index.js'
+      const bin = require.resolve(pkg)
       this.proc = spawn(process.execPath, [bin], {
-        // Electron 的 process.execPath 是 Electron 本体，要当 Node 用
-        // acpEnv() 是用户在设置里填的 CLI 路径 / 模型
         env: { ...process.env, ...acpEnv(), ELECTRON_RUN_AS_NODE: '1' },
         stdio: ['pipe', 'pipe', 'pipe']
       })
@@ -124,10 +135,9 @@ export class AcpClient extends EventEmitter {
     }
     this._sessionId = result.sessionId
     this.modelOption = result.configOptions?.find((o) => o.id === 'model') ?? null
-    // opencode 的模型在 app 里配：连上后把保存的模型下发下去
-    const savedModel = getSettings().acpOpencodeModel?.trim()
+    // opencode/codex 的模型在 app 里配：连上后把保存的模型下发下去
+    const savedModel = acpSavedModel(provider)
     if (
-      provider === 'opencode' &&
       savedModel &&
       savedModel !== this.modelOption?.currentValue &&
       this.modelOption?.options?.some((o) => o.value === savedModel)
@@ -135,7 +145,7 @@ export class AcpClient extends EventEmitter {
       try {
         await this.setModel(savedModel)
       } catch {
-        // 下发失败就用 opencode 的默认模型，不挡聊天
+        // 下发失败就用那家自己的默认模型，不挡聊天
       }
     }
     return this._sessionId

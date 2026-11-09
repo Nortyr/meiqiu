@@ -68,7 +68,8 @@ export const en: Dict = {
         ? `Ingest the ${agent} session "${title}" into the wiki`
         : `Extract a skill from the ${agent} session "${title}"`,
     cancelTask: 'Cancel task',
-    skillsToggle: (n) => `${n} skill${n === 1 ? '' : 's'} extracted`,
+    skillsToggle: (n) => `~/.claude/skills · ${n}`,
+    skillsSearch: 'Search skills…',
     directChat: 'Direct chat',
     reportRolledBack: 'Rolled back to the pre-ingest state',
     reportSummary: (created, updated, warnings, errors) =>
@@ -81,7 +82,7 @@ export const en: Dict = {
     createdPages: (list) => `Created: ${list}`,
     updatedPages: (list) => `Updated: ${list}`,
     noChanges: 'The agent did not change any page',
-    noSkills: 'No products yet',
+    noSkills: 'No skills in this directory',
     contextPrefix: (path, agent, text) =>
       `Read the session file at ${path} (a past ${agent} session), then answer: ${text}`
   },
@@ -146,8 +147,8 @@ export const en: Dict = {
       `Custom path to the ${label} CLI. Leave empty for auto-detection${detected ? ` (current: ${detected})` : ''}.`,
     model: 'Model',
     modelDescClaude: 'Model for skill extraction and chat. Decided by Claude Code by default.',
-    modelDescOpencode:
-      "Sent to OpenCode over ACP. Only affects sessions started by MeiQiu; OpenCode's own config is untouched.",
+    modelDescAcp: (label) =>
+      `Sent to ${label} over ACP. Only affects sessions started by MeiQiu; ${label}'s own config is untouched.`,
     modelDefault: 'Default',
     modelCustom: 'Custom…',
     customModel: 'Custom model',

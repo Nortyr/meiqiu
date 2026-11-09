@@ -135,6 +135,8 @@ app.whenReady().then(() => {
       if (!win.isDestroyed()) win.webContents.send('chat:event', ev)
     }
   })
+  // adapter 的 stderr / 进程退出打到主进程控制台，排查连接问题用
+  acpClient.on('log', (msg) => console.error('[acp]', msg))
 
   createWindow()
 

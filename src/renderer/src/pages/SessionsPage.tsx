@@ -127,7 +127,9 @@ function SessionsPage({
 
   if (!result || !settings) return <Loading />
 
-  const providerLabel = settings.acpProvider === 'opencode' ? 'OpenCode' : 'Claude Code'
+  const providerLabel = { 'claude-code': 'Claude Code', opencode: 'OpenCode', codex: 'Codex' }[
+    settings.acpProvider
+  ]
 
   return (
     <div className="sessions-page">
