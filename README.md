@@ -43,10 +43,11 @@ It works with the agents you already use — **Kiro**, **Claude Code**, **Codex*
 
 Download the `.dmg` from [Releases](../../releases). macOS only (Apple Silicon and Intel).
 
-The app is not signed with an Apple Developer certificate yet, so on first launch macOS will block it. On Apple Silicon it may even say the app "is damaged and can't be opened" — it is not damaged; this is how Gatekeeper reports unsigned apps downloaded from the internet. Either:
+The app is not signed with an Apple Developer certificate yet, so on first launch macOS will warn that it cannot verify the developer. Open it either way:
 
-- Open Terminal and run: `xattr -cr /Applications/MeiQiu.app` (removes the quarantine flag), or
-- Go to **System Settings → Privacy & Security** and click **Open Anyway** after the first blocked launch.
+- After the first blocked launch, go to **System Settings → Privacy & Security** and click **Open Anyway**, or
+- Right-click the app → **Open**, or
+- Open Terminal and run: `xattr -cr /Applications/MeiQiu.app` (removes the quarantine flag).
 
 ## Build from source
 

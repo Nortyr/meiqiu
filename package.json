@@ -17,7 +17,7 @@
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "install-electron && electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
-    "build:mac": "electron-vite build && electron-builder --mac"
+    "build:mac": "electron-vite build && electron-builder --mac --dir && codesign --force --deep --sign - dist/mac-arm64/MeiQiu.app && electron-builder --mac --prepackaged dist/mac-arm64/MeiQiu.app"
   },
   "dependencies": {
     "@agentclientprotocol/claude-agent-acp": "^0.101.0",

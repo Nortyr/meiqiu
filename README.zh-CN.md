@@ -43,10 +43,11 @@
 
 从 [Releases](../../releases) 下载 `.dmg`。仅支持 macOS（Apple Silicon 和 Intel 都可以）。
 
-app 还没有 Apple 开发者证书签名，首次打开会被 macOS 拦。在 Apple Silicon 上甚至可能提示「MeiQiu.app 已损坏，无法打开」——**文件没有坏**，这是 macOS 对从网上下载的未签名 app 的提示方式。两种解决方式：
+app 还没有 Apple 开发者证书签名，首次打开 macOS 会提示无法验证开发者。任选一种方式打开：
 
-- 打开终端执行：`xattr -cr /Applications/MeiQiu.app`（去掉下载文件的隔离标记）；或
-- 首次被拦截后，去「系统设置 → 隐私与安全性」点「仍要打开」。
+- 首次被拦截后，去「系统设置 → 隐私与安全性」点「仍要打开」；或
+- 右键点 app 图标 → **打开**；或
+- 打开终端执行：`xattr -cr /Applications/MeiQiu.app`（去掉下载文件的隔离标记）。
 
 ## 从源码构建
 
