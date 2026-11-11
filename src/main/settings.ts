@@ -12,21 +12,28 @@ export interface AcpConfig {
   acpEnabledClaudeCode?: boolean // Claude Code 的开关，各家独立
   acpEnabledOpencode?: boolean // OpenCode 的开关，各家独立
   acpEnabledCodex?: boolean // Codex 的开关，各家独立
+  acpEnabledKiro?: boolean // Kiro 的开关，各家独立
   acpHarnessPath?: string // Claude CLI 路径
   acpOpencodePath?: string // OpenCode CLI 路径
   acpCodexPath?: string // Codex CLI 路径
+  acpKiroPath?: string // kiro-cli 路径
   acpModel?: string
   acpOpencodeModel?: string // OpenCode 的模型，连上后走 ACP 下发
   acpCodexModel?: string // Codex 的模型，连上后走 ACP 下发
+  acpKiroModel?: string // Kiro 的模型，连上后走 ACP 下发
   acpEnabled?: boolean // 旧版全局开关，读取时迁移掉
   wikiVaultPath?: string // 知识库 vault 位置，空 = ~/.meiqiu/vault
   locale?: Locale | '' // 界面语言，空/缺省 = 跟随系统
 }
 
-const PATH_KEYS: Record<AcpProvider, 'acpHarnessPath' | 'acpOpencodePath' | 'acpCodexPath'> = {
+const PATH_KEYS: Record<
+  AcpProvider,
+  'acpHarnessPath' | 'acpOpencodePath' | 'acpCodexPath' | 'acpKiroPath'
+> = {
   'claude-code': 'acpHarnessPath',
   opencode: 'acpOpencodePath',
-  codex: 'acpCodexPath'
+  codex: 'acpCodexPath',
+  kiro: 'acpKiroPath'
 }
 
 export function harnessPathOf(s: AcpConfig): string {
@@ -55,11 +62,12 @@ export function getSettings(): AcpConfig {
 
 const ENABLED_KEYS: Record<
   AcpProvider,
-  'acpEnabledClaudeCode' | 'acpEnabledOpencode' | 'acpEnabledCodex'
+  'acpEnabledClaudeCode' | 'acpEnabledOpencode' | 'acpEnabledCodex' | 'acpEnabledKiro'
 > = {
   'claude-code': 'acpEnabledClaudeCode',
   opencode: 'acpEnabledOpencode',
-  codex: 'acpEnabledCodex'
+  codex: 'acpEnabledCodex',
+  kiro: 'acpEnabledKiro'
 }
 
 function enabledOf(s: AcpConfig, provider: AcpProvider): boolean {
@@ -87,17 +95,18 @@ export function saveSettings(patch: AcpConfig): void {
 }
 
 // PATH 里找不到时的常见安装位置
-const HARNESS_CANDIDATES: Record<'claude' | 'opencode' | 'codex', string[]> = {
+const HARNESS_CANDIDATES: Record<'claude' | 'opencode' | 'codex' | 'kiro-cli', string[]> = {
   claude: [],
   opencode: [
     join(homedir(), '.opencode/bin/opencode'), // 官方安装脚本
     '/Applications/OpenCode.app/Contents/Resources/opencode-cli' // 桌面版自带
   ],
-  codex: []
+  codex: [],
+  'kiro-cli': [join(homedir(), '.local/bin/kiro-cli')] // 官方安装脚本
 }
 
 // 自动检测 CLI 的位置：先 PATH，再常见安装位置
-export function detectHarnessPath(bin: 'claude' | 'opencode' | 'codex'): string {
+export function detectHarnessPath(bin: 'claude' | 'opencode' | 'codex' | 'kiro-cli'): string {
   try {
     const found = execSync(`which ${bin}`, { encoding: 'utf8' }).trim()
     if (found) return found
@@ -129,6 +138,7 @@ export function acpSavedModel(provider: AcpProvider): string {
   const s = readFile()
   if (provider === 'opencode') return s.acpOpencodeModel?.trim() ?? ''
   if (provider === 'codex') return s.acpCodexModel?.trim() ?? ''
+  if (provider === 'kiro') return s.acpKiroModel?.trim() ?? ''
   return ''
 }
 
@@ -145,11 +155,18 @@ export function toResult(connected: boolean): SettingsResult {
     acpProvider: provider,
     acpHarnessPath: harnessPathOf(s),
     detectedHarnessPath: detectHarnessPath(
-      provider === 'opencode' ? 'opencode' : provider === 'codex' ? 'codex' : 'claude'
+      provider === 'opencode'
+        ? 'opencode'
+        : provider === 'codex'
+          ? 'codex'
+          : provider === 'kiro'
+            ? 'kiro-cli'
+            : 'claude'
     ),
     acpModel: s.acpModel ?? '',
     acpOpencodeModel: s.acpOpencodeModel ?? '',
     acpCodexModel: s.acpCodexModel ?? '',
+    acpKiroModel: s.acpKiroModel ?? '',
     locale: s.locale ?? ''
   }
 }

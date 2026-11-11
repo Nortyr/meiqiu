@@ -66,6 +66,7 @@ export const zh = {
         ? `把 ${agent} 的会话「${title}」摄入知识库`
         : `从 ${agent} 的会话「${title}」提取 skill`,
     cancelTask: '取消任务',
+    newChat: '新对话',
     skillsToggle: (n: number) => `~/.claude/skills · ${n} 个`,
     skillsSearch: '搜索 skill…',
     directChat: '直接对话',

@@ -38,7 +38,13 @@ interface ChatContextValue {
   // 聊天视图是否开着：切页时记住，回来直接恢复到聊天视图
   chatViewOpen: boolean
   setChatViewOpen: (v: boolean) => void
+  // 这轮对话绑定的会话（从某个会话进入聊天时带上它的上下文）；null = 直接对话
+  contextSession: SessionInfo | null
   send: (text: string) => Promise<void>
+  // 在看某个会话时发问：绑定的不是这个会话就先重开一轮对话，再带上下文发送
+  sendFromConversation: (text: string, session: SessionInfo) => Promise<void>
+  // 手动重开一轮对话（清消息 + 主进程换新 ACP 会话），回到直接对话
+  newChat: () => Promise<void>
   startExtract: (session: SessionInfo) => Promise<void>
   startIngest: (session: SessionInfo) => Promise<void>
   clearTask: () => void
@@ -67,6 +73,8 @@ export function ChatProvider({ children }: { children: ReactNode }): React.JSX.E
   const [showSkills, setShowSkills] = useState(false)
   const [hintText, setHintText] = useState<string | null>(null)
   const [chatViewOpen, setChatViewOpen] = useState(false)
+  // 这轮对话绑定的会话；换会话进入聊天时要重开对话，否则上下文是错的
+  const [contextSession, setContextSession] = useState<SessionInfo | null>(null)
 
   // 摄入 run id 在事件回调里读，用 ref 避免闭包过期
   const ingestRunRef = useRef<string | null>(null)
@@ -150,6 +158,41 @@ export function ChatProvider({ children }: { children: ReactNode }): React.JSX.E
     }
   }
 
+  // 重开一轮对话：清界面状态 + 主进程换新 ACP 会话（进程保留，session 换新）。
+  // bound = 这轮对话绑定的会话；null = 直接对话
+  const resetChat = async (bound: SessionInfo | null): Promise<void> => {
+    setMessages([])
+    setTools([])
+    setTask(null)
+    setIngestRun(null)
+    setIngestReport(null)
+    setInput('')
+    setContextSession(bound)
+    if (connected) {
+      try {
+        await window.api.chatStart(true)
+      } catch {
+        setConnected(false) // 换新会话失败：标未连接，发送时自动重连
+      }
+    }
+  }
+
+  // 在看某个会话时发问：绑定的不是这个会话就先重开，再把这个会话的文件作为上下文带上
+  const sendFromConversation = async (text: string, session: SessionInfo): Promise<void> => {
+    if (!text || running) return
+    if (contextSession?.id !== session.id) {
+      await resetChat(session)
+      await send(withSessionContext(text, session, t))
+    } else {
+      await send(text)
+    }
+  }
+
+  const newChat = async (): Promise<void> => {
+    if (running) return
+    await resetChat(null)
+  }
+
   // 点「提取 skill」：主进程拼好预填指令放进输入框，不自动发；没启用 ACP 就提示去设置
   const startExtract = async (s: SessionInfo): Promise<void> => {
     if (!settings?.acpEnabled) {
@@ -157,6 +200,9 @@ export function ChatProvider({ children }: { children: ReactNode }): React.JSX.E
       return
     }
     setHintText(null)
+    // 任务换到别的会话：旧对话的上下文已经不适用，重开一轮
+    if (contextSession?.id !== s.id && !running) await resetChat(s)
+    else setContextSession(s)
     setTask(s)
     setTaskMode('extract')
     setIngestRun(null)
@@ -177,6 +223,9 @@ export function ChatProvider({ children }: { children: ReactNode }): React.JSX.E
         setHintText(t.chat.prepareFail(prep.error ?? ''))
         return
       }
+      // 同 startExtract：任务换到别的会话就重开一轮对话
+      if (contextSession?.id !== s.id && !running) await resetChat(s)
+      else setContextSession(s)
       setTask(s)
       setTaskMode('ingest')
       setIngestRun(prep.runId)
@@ -218,7 +267,10 @@ export function ChatProvider({ children }: { children: ReactNode }): React.JSX.E
         clearHint: () => setHintText(null),
         chatViewOpen,
         setChatViewOpen,
+        contextSession,
         send,
+        sendFromConversation,
+        newChat,
         startExtract,
         startIngest,
         clearTask,

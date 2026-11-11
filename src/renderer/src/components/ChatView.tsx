@@ -51,6 +51,7 @@ function ChatView({
 
   const { task, taskMode, ingestReport } = chat
   const report = ingestReport
+  const contextSession = chat.contextSession
 
   return (
     <div className="conversation">
@@ -61,10 +62,17 @@ function ChatView({
         subtitle={
           task
             ? t.chat.taskBanner(taskMode, AGENT_LABELS[task.agent], task.title ?? task.path)
-            : t.chat.directChat
+            : contextSession
+              ? (contextSession.title ?? contextSession.path)
+              : t.chat.directChat
         }
         onBack={onBack}
       >
+        {chat.messages.length > 0 && (
+          <button className="task-clear" onClick={() => void chat.newChat()}>
+            {t.chat.newChat}
+          </button>
+        )}
         {task && (
           <button className="task-clear" onClick={chat.clearTask}>
             {t.chat.cancelTask}

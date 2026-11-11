@@ -22,8 +22,8 @@
 - 对话内容气泡视图。
 
 **内嵌聊天（走 ACP 协议）**
-- 在 app 里直接和 Claude Code / OpenCode 对话，工具调用过程内联展示。
-- 看会话时发问，app 自动把这个会话的文件带上作为上下文。
+- 在 app 里直接和 Kiro / Claude Code / Codex / opencode 对话，工具调用过程内联展示。
+- 看会话时发问，app 自动把这个会话的文件带上作为上下文；每个会话进入的聊天是独立对话，互不串上下文。
 
 **提取 skill——把会话提炼成可复用的 skill**
 - 一键预填指令，让 agent 按内置的 [skill-creator](resources/skill-creator) 把会话里可复用的做事流程提炼成 skill，保存到 `~/.claude/skills/`。指令由你检查、修改后自己发送，不会自动执行。
@@ -69,7 +69,7 @@ npm install --registry=https://registry.npmmirror.com
 
 ## 技术栈
 
-Electron + React + TypeScript，SQLite 用 Node 自带的 `node:sqlite`（没有需要重编译的原生模块），构建用 [electron-vite](https://electron-vite.org)，ACP 适配器是 [@agentclientprotocol/claude-agent-acp](https://www.npmjs.com/package/@agentclientprotocol/claude-agent-acp)。wiki 页面是纯 markdown 文件——app 自己的 SQLite 只存可重建的索引和报告。
+Electron + React + TypeScript，SQLite 用 Node 自带的 `node:sqlite`（没有需要重编译的原生模块），构建用 [electron-vite](https://electron-vite.org)。ACP 连接走 [@agentclientprotocol/claude-agent-acp](https://www.npmjs.com/package/@agentclientprotocol/claude-agent-acp)、[@agentclientprotocol/codex-acp](https://www.npmjs.com/package/@agentclientprotocol/codex-acp)，以及 `kiro-cli` / `opencode` 自带的 `acp` 子命令。wiki 页面是纯 markdown 文件——app 自己的 SQLite 只存可重建的索引和报告。
 
 ## 隐私
 
@@ -85,7 +85,6 @@ MeiQiu 是 vibe coding 写出来的——迭代过程中主要由 AI agent（Kir
 
 - 记忆的修改和删除（目前是只读），写之前先备份。
 - MCP server：让任何 agent 都能检索你的知识库和跨 agent 记忆，作为上下文。
-- agent memory：可选的、选择性的会话上传客户端。
 
 长期方向是 agent 工程——不自己造 harness，在各家成熟 harness 之上做：
 

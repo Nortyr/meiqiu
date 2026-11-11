@@ -89,6 +89,46 @@ body {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
+/* 悬停提示气泡：显示在图标右侧 */
+.nav-item {
+  position: relative;
+}
+
+.nav-tooltip {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1f1f24;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  padding: 7px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+/* 气泡左侧小三角 */
+.nav-tooltip::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-right-color: #1f1f24;
+}
+
+.nav-item:hover .nav-tooltip {
+  opacity: 1;
+  transition-delay: 0.25s;
+}
+
 /* 主区 */
 .content {
   flex: 1;

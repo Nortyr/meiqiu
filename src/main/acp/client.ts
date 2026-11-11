@@ -87,12 +87,26 @@ export class AcpClient extends EventEmitter {
     }
   }
 
+  // 不换进程、只换会话：界面「新对话」/ 换上下文时用。
+  // 进程不在就退化成完整 connect
+  async newSession(cwd: string): Promise<string> {
+    if (!this.proc) return this.connect(cwd)
+    return this.startSession(cwd)
+  }
+
   private async doConnect(cwd: string): Promise<string> {
     const provider = acpProvider()
     const harnessPath = harnessPathOf(getSettings()).trim()
     if (provider === 'opencode') {
       // opencode 自带 acp 子命令，直接就是 ACP server；没配置就自动检测
       const bin = harnessPath || detectHarnessPath('opencode') || 'opencode'
+      this.proc = spawn(bin, ['acp'], {
+        env: { ...process.env, ...acpEnv() },
+        stdio: ['pipe', 'pipe', 'pipe']
+      })
+    } else if (provider === 'kiro') {
+      // kiro-cli 有隐藏的 acp 子命令（help 里不列，但存在），同 opencode 的路数
+      const bin = harnessPath || detectHarnessPath('kiro-cli') || 'kiro-cli'
       this.proc = spawn(bin, ['acp'], {
         env: { ...process.env, ...acpEnv() },
         stdio: ['pipe', 'pipe', 'pipe']
@@ -129,13 +143,19 @@ export class AcpClient extends EventEmitter {
       protocolVersion: 1,
       clientCapabilities: { fs: { readTextFile: false, writeTextFile: false } }
     })
+    return this.startSession(cwd)
+  }
+
+  // session/new + 下发 app 里保存的模型。connect 和 newSession 共用
+  private async startSession(cwd: string): Promise<string> {
+    const provider = acpProvider()
     const result = (await this.request('session/new', { cwd, mcpServers: [] })) as {
       sessionId: string
       configOptions?: SessionConfigOption[]
     }
     this._sessionId = result.sessionId
     this.modelOption = result.configOptions?.find((o) => o.id === 'model') ?? null
-    // opencode/codex 的模型在 app 里配：连上后把保存的模型下发下去
+    // opencode/codex/kiro 的模型在 app 里配：连上后把保存的模型下发下去
     const savedModel = acpSavedModel(provider)
     if (
       savedModel &&

@@ -22,8 +22,8 @@ It works with the agents you already use — **Kiro**, **Claude Code**, **Codex*
 - Full conversation view with message bubbles.
 
 **Embedded chat via ACP (Agent Client Protocol)**
-- Chat with Claude Code or OpenCode inside the app, with tool calls shown inline.
-- Ask questions about any session — the app attaches the session file as context.
+- Chat with Kiro, Claude Code, Codex, or opencode inside the app, with tool calls shown inline.
+- Ask questions about any session — each session you chat from gets its own conversation with the session file attached as context.
 
 **Skill extraction — distill sessions into reusable skills**
 - One click pre-fills an instruction for the agent to distill a session's workflow into a skill (using the bundled [skill-creator](resources/skill-creator)), saved to `~/.claude/skills/`. You review and send; nothing runs automatically.
@@ -69,7 +69,7 @@ npm install --registry=https://registry.npmmirror.com
 
 ## Tech stack
 
-Electron + React + TypeScript, with `node:sqlite` (no native modules to rebuild), [electron-vite](https://electron-vite.org), and the ACP adapter [@agentclientprotocol/claude-agent-acp](https://www.npmjs.com/package/@agentclientprotocol/claude-agent-acp). Wiki pages are plain markdown files — the app's own SQLite only stores rebuildable indexes and reports.
+Electron + React + TypeScript, with `node:sqlite` (no native modules to rebuild), [electron-vite](https://electron-vite.org), and ACP connections via [@agentclientprotocol/claude-agent-acp](https://www.npmjs.com/package/@agentclientprotocol/claude-agent-acp), [@agentclientprotocol/codex-acp](https://www.npmjs.com/package/@agentclientprotocol/codex-acp), and the built-in `acp` subcommands of `kiro-cli` / `opencode`. Wiki pages are plain markdown files — the app's own SQLite only stores rebuildable indexes and reports.
 
 ## Privacy
 
@@ -85,7 +85,6 @@ Near term:
 
 - Edit & delete memories (currently read-only), with backup-before-write.
 - An MCP server so any agent can search your wiki and cross-agent memories as context.
-- Agent memory: an opt-in, selective session upload client.
 
 Longer term is agent engineering — building on top of mature harnesses instead of reinventing them:
 

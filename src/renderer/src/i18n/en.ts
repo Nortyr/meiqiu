@@ -68,6 +68,7 @@ export const en: Dict = {
         ? `Ingest the ${agent} session "${title}" into the wiki`
         : `Extract a skill from the ${agent} session "${title}"`,
     cancelTask: 'Cancel task',
+    newChat: 'New chat',
     skillsToggle: (n) => `~/.claude/skills · ${n}`,
     skillsSearch: 'Search skills…',
     directChat: 'Direct chat',

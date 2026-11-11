@@ -71,7 +71,7 @@ export interface SessionContentResult {
 export type Locale = 'zh' | 'en'
 
 // 支持 ACP 连接的 provider
-export type AcpProvider = 'claude-code' | 'opencode' | 'codex'
+export type AcpProvider = 'claude-code' | 'opencode' | 'codex' | 'kiro'
 
 // 设置
 export interface SettingsResult {
@@ -83,6 +83,7 @@ export interface SettingsResult {
   acpModel: string
   acpOpencodeModel: string // OpenCode 的模型（走 ACP 下发），空 = 用 opencode 自己的默认
   acpCodexModel: string // Codex 的模型（走 ACP 下发），空 = 用 codex 自己的默认
+  acpKiroModel: string // Kiro 的模型（走 ACP 下发），空 = 用 kiro-cli 自己的默认
   locale: Locale | '' // 界面语言，空 = 跟随系统
 }
 
@@ -92,9 +93,11 @@ export interface AcpConfigPatch {
   acpHarnessPath?: string // Claude CLI 路径
   acpOpencodePath?: string // OpenCode CLI 路径
   acpCodexPath?: string // Codex CLI 路径
+  acpKiroPath?: string // kiro-cli 路径
   acpModel?: string
   acpOpencodeModel?: string
   acpCodexModel?: string
+  acpKiroModel?: string
   locale?: Locale | '' // 界面语言，'' = 跟随系统
 }
 
@@ -228,8 +231,8 @@ export interface MeiqiuApi {
   listSessions(): Promise<SessionsResult>
   onSessionsChanged(cb: () => void): () => void
   getSessionContent(session: SessionInfo): Promise<SessionContentResult>
-  // 起 ACP 会话（重复调用复用已有连接）
-  chatStart(): Promise<{ sessionId: string }>
+  // 起 ACP 会话（重复调用复用已有连接；forceNew = 保留进程但换一个全新会话）
+  chatStart(forceNew?: boolean): Promise<{ sessionId: string }>
   // 发一轮对话；流式消息走 onChatEvent
   chatSend(text: string): Promise<void>
   onChatEvent(cb: (e: ChatEvent) => void): () => void

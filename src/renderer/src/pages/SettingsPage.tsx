@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import type { AcpModelsResult, Locale } from '../../../shared/types'
 import { useSettings } from '../state/settings'
 import Loading from '../components/Loading'
@@ -12,10 +12,24 @@ const MODEL_OPTIONS = [
   { value: '__custom__', labelKey: 'modelCustom' }
 ] as const
 
-const PROVIDER_LABELS: Record<'claude-code' | 'opencode' | 'codex', string> = {
+const PROVIDER_LABELS: Record<'claude-code' | 'opencode' | 'codex' | 'kiro', string> = {
   'claude-code': 'Claude Code',
   opencode: 'OpenCode',
-  codex: 'Codex'
+  codex: 'Codex',
+  kiro: 'Kiro'
+}
+
+// 各家的模型存在哪个字段（Claude Code 走环境变量 acpModel，不在此列）
+function savedAcpModel(s: {
+  acpProvider: string
+  acpOpencodeModel: string
+  acpCodexModel: string
+  acpKiroModel: string
+}): string {
+  if (s.acpProvider === 'opencode') return s.acpOpencodeModel
+  if (s.acpProvider === 'codex') return s.acpCodexModel
+  if (s.acpProvider === 'kiro') return s.acpKiroModel
+  return ''
 }
 
 function SettingsPage(): React.JSX.Element {
@@ -38,9 +52,7 @@ function SettingsPage(): React.JSX.Element {
       const preset = MODEL_OPTIONS.some((o) => o.value === settings.acpModel)
       setModelChoice(preset ? settings.acpModel : '__custom__')
       setCustomModel(preset ? '' : settings.acpModel)
-      setOcModel(
-        settings.acpProvider === 'codex' ? settings.acpCodexModel : settings.acpOpencodeModel
-      )
+      setOcModel(savedAcpModel(settings))
     }
   }
 
@@ -121,6 +133,12 @@ function SettingsPage(): React.JSX.Element {
         >
           Codex
         </button>
+        <button
+          className={`tab ${provider === 'kiro' ? 'active' : ''}`}
+          onClick={() => save({ acpProvider: 'kiro' })}
+        >
+          Kiro
+        </button>
       </div>
       <div className="settings-card">
         {/* 启用 */}
@@ -178,7 +196,9 @@ function SettingsPage(): React.JSX.Element {
                       ? '/usr/local/bin/opencode'
                       : provider === 'codex'
                         ? '/usr/local/bin/codex'
-                        : '/usr/local/bin/claude')
+                        : provider === 'kiro'
+                          ? '~/.local/bin/kiro-cli'
+                          : '/usr/local/bin/claude')
                   }
                 />
               </div>
@@ -251,21 +271,33 @@ function SettingsPage(): React.JSX.Element {
                       {Object.entries(
                         ocModels.options.reduce<Record<string, AcpModelsResult['options']>>(
                           (acc, o) => {
-                            const g = o.value.split('/')[0]
+                            // opencode 的模型带厂商前缀（anthropic/xxx）按前缀分组；
+                            // kiro 的没有前缀，合成一个 '' 组、不套 optgroup
+                            const g = o.value.includes('/') ? o.value.split('/')[0] : ''
                             ;(acc[g] ??= []).push(o)
                             return acc
                           },
                           {}
                         )
-                      ).map(([group, options]) => (
-                        <optgroup key={group} label={group}>
-                          {options.map((o) => (
-                            <option key={o.value} value={o.value}>
-                              {o.name}
-                            </option>
-                          ))}
-                        </optgroup>
-                      ))}
+                      ).map(([group, options]) =>
+                        group === '' ? (
+                          <Fragment key={group}>
+                            {options.map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.name}
+                              </option>
+                            ))}
+                          </Fragment>
+                        ) : (
+                          <optgroup key={group} label={group}>
+                            {options.map((o) => (
+                              <option key={o.value} value={o.value}>
+                                {o.name}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )
+                      )}
                     </select>
                   ) : (
                     <span className="muted small">{t.settings.ocModelsAfterConnect}</span>
@@ -284,10 +316,13 @@ function SettingsPage(): React.JSX.Element {
                       ? 'acpOpencodePath'
                       : provider === 'codex'
                         ? 'acpCodexPath'
-                        : 'acpHarnessPath']: harnessPath,
+                        : provider === 'kiro'
+                          ? 'acpKiroPath'
+                          : 'acpHarnessPath']: harnessPath,
                     acpModel: modelChoice === '__custom__' ? customModel : modelChoice,
                     acpOpencodeModel: provider === 'opencode' ? ocModel : settings.acpOpencodeModel,
-                    acpCodexModel: provider === 'codex' ? ocModel : settings.acpCodexModel
+                    acpCodexModel: provider === 'codex' ? ocModel : settings.acpCodexModel,
+                    acpKiroModel: provider === 'kiro' ? ocModel : settings.acpKiroModel
                   })
                 }
               >

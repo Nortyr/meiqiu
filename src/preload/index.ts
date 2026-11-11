@@ -16,7 +16,7 @@ const api: MeiqiuApi = {
     return () => ipcRenderer.removeListener('sessions:changed', listener)
   },
   getSessionContent: (session) => ipcRenderer.invoke('sessions:content', session),
-  chatStart: () => ipcRenderer.invoke('chat:start'),
+  chatStart: (forceNew?: boolean) => ipcRenderer.invoke('chat:start', forceNew),
   chatSend: (text) => ipcRenderer.invoke('chat:send', text),
   onChatEvent: (cb) => {
     const listener = (_e: Electron.IpcRendererEvent, ev: Parameters<typeof cb>[0]): void => cb(ev)

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { SessionsResult, SessionInfo, AgentId } from '../../../shared/types'
 import { AGENT_LABELS } from '../../../shared/types'
-import { useChat, withSessionContext } from '../chat/chat'
+import { useChat } from '../chat/chat'
 import { useSettings } from '../state/settings'
 import Chevron from '../components/Chevron'
 import ChatView from '../components/ChatView'
@@ -116,20 +116,23 @@ function SessionsPage({
   const send = async (): Promise<void> => {
     const text = chat.input.trim()
     if (!text || chat.running) return
-    // 正在看某个会话时发问，把这个会话的文件作为上下文带上（只带这轮对话的第一条）
-    let out = text
-    if (!chat.task && view.kind === 'conversation' && chat.messages.length === 0) {
-      out = withSessionContext(text, view.session, t)
-    }
     setView({ kind: 'chat' })
-    await chat.send(out)
+    // 正在看某个会话时发问：对话绑定的不是这个会话就先重开一轮，带上它的上下文
+    if (!chat.task && view.kind === 'conversation') {
+      await chat.sendFromConversation(text, view.session)
+    } else {
+      await chat.send(text)
+    }
   }
 
   if (!result || !settings) return <Loading />
 
-  const providerLabel = { 'claude-code': 'Claude Code', opencode: 'OpenCode', codex: 'Codex' }[
-    settings.acpProvider
-  ]
+  const providerLabel = {
+    'claude-code': 'Claude Code',
+    opencode: 'OpenCode',
+    codex: 'Codex',
+    kiro: 'Kiro'
+  }[settings.acpProvider]
 
   return (
     <div className="sessions-page">

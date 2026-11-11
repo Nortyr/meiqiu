@@ -91,10 +91,10 @@ function Shell(): React.JSX.Element {
             <button
               key={n.id}
               className={`nav-item ${page === n.id ? 'active' : ''}`}
-              title={t.nav[n.id]}
               onClick={() => setPage(n.id)}
             >
               {n.icon}
+              <span className="nav-tooltip">{t.nav[n.id]}</span>
             </button>
           ))}
         </nav>

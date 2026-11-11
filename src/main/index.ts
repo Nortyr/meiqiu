@@ -97,11 +97,14 @@ app.whenReady().then(() => {
   ipcMain.handle('wiki:lint', () => runLint())
   ipcMain.handle('wiki:lint-latest', () => latestLint())
 
-  // ACP 聊天：只有在设置里启用了才连；connect 复用已有会话
-  ipcMain.handle('chat:start', async () => {
+  // ACP 聊天：只有在设置里启用了才连；connect 复用已有会话。
+  // forceNew = true 时保留进程、强制换一个全新的会话（界面「新对话」/ 换会话上下文）
+  ipcMain.handle('chat:start', async (_e, forceNew?: boolean) => {
     if (!isAcpEnabled()) throw new Error(mainT('acpNotEnabled'))
     ensureBundledSkills()
-    const sessionId = await acpClient.connect(homedir())
+    const sessionId = forceNew
+      ? await acpClient.newSession(homedir())
+      : await acpClient.connect(homedir())
     return { sessionId }
   })
   ipcMain.handle('settings:get', () => toResult(acpClient.sessionId !== null))
