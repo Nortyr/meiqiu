@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "6fdc3032-3757-4164-ab89-1850a25cf86d",
+  "status": "current",
+  "command": "deliver",
+  "type": "explainer",
+  "input": "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-superagent-20261112-225214/candidate.archify.md",
+  "output": "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-superagent-20261112-225214/dsh-superagent.html",
+  "specification": {
+    "sha256": "9355b4c367b50882fe699cd7b4fb400dc2616d163e03fdd1bef2d94d31ed519c",
+    "bytes": 6224
+  },
+  "artifact": {
+    "sha256": "9de6dff9104b9f079b10e1ae0013ed01fe489758eb1604818bf8597a77ed3139",
+    "bytes": 582399
+  },
+  "explainer": {
+    "preparedSha256": "315093baf7204e8d86fb643d6e91d6e862c9596ff99d6ec6b35a93480257971a",
+    "dependencies": [
+      {
+        "kind": "diagram-spec",
+        "id": "request-flow",
+        "inline": true,
+        "sha256": "2c820a48390628354c2cf688dbc77c6dfd25857d4c7775b4f360309246bf30a6",
+        "bytes": 1613
+      }
+    ]
+  }
+}

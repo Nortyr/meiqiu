@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "explainer",
+  "quality": "showcase",
+  "specification": {
+    "path": "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-aihot-20261112-234506/candidate.archify.md",
+    "sha256": "b2d1eeee14edcccb0b6f738b2ca0f028594ed897b0f0c17d2b62cbace5b2c372",
+    "bytes": 5424
+  },
+  "artifact": {
+    "path": "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-aihot-20261112-234506/aihot-architecture.html",
+    "sha256": "7eb964850b7a5e93d74e68cca50af9db00f154a6e9726778690aa2a1c9b902dd",
+    "bytes": 1344573
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "not-run"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-aihot-20261112-234506/aihot-architecture.finalize.json",
+    "summaryReceipt": "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-aihot-20261112-234506/aihot-architecture.finalize-summary.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-02T15:13:51.764Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 1231,
+  "browserCheck": {
+    "requested": false,
+    "ran": false
+  }
+}

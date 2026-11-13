@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "5499583f-f0d3-4202-a6cf-1cf4502b8884",
+  "status": "current",
+  "command": "deliver",
+  "type": "explainer",
+  "input": "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-aihot-20261112-234506/candidate.archify.md",
+  "output": "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-aihot-20261112-234506/aihot-architecture.html",
+  "specification": {
+    "sha256": "b2d1eeee14edcccb0b6f738b2ca0f028594ed897b0f0c17d2b62cbace5b2c372",
+    "bytes": 5424
+  },
+  "artifact": {
+    "sha256": "7eb964850b7a5e93d74e68cca50af9db00f154a6e9726778690aa2a1c9b902dd",
+    "bytes": 1344573
+  },
+  "explainer": {
+    "preparedSha256": "66a3e9bd565a4cfbb579b859b96bf3ac9bdb0665a0f97627dc7d220396c194a0",
+    "dependencies": [
+      {
+        "kind": "diagram-spec",
+        "id": "topo",
+        "inline": true,
+        "sha256": "b38447e63b6f7c3438d31d82375bfe372f208f4f572755c777d531af1388d4d1",
+        "bytes": 1125
+      },
+      {
+        "kind": "diagram-spec",
+        "id": "pipeline-flow",
+        "inline": true,
+        "sha256": "be0d3ac6845de20bba1616e2cb9d3299a676d8251311d74e97f170cb2c6562ea",
+        "bytes": 1225
+      },
+      {
+        "kind": "diagram-spec",
+        "id": "repo-tree",
+        "inline": true,
+        "sha256": "6bacec9f10709bcd93012038235291dd4d01a4be49cac27ba03f2fd6cf7a7629",
+        "bytes": 804
+      }
+    ]
+  }
+}

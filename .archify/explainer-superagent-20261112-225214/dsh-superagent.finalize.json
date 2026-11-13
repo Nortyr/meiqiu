@@ -1,0 +1,336 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "explainer",
+  "quality": "showcase",
+  "startedAt": "2026-11-12T14:53:34.622Z",
+  "specification": {
+    "path": "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-superagent-20261112-225214/candidate.archify.md",
+    "sha256": "9355b4c367b50882fe699cd7b4fb400dc2616d163e03fdd1bef2d94d31ed519c",
+    "bytes": 6224
+  },
+  "artifact": {
+    "path": "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-superagent-20261112-225214/dsh-superagent.html",
+    "sha256": "9de6dff9104b9f079b10e1ae0013ed01fe489758eb1604818bf8597a77ed3139",
+    "bytes": 582399
+  },
+  "stages": {
+    "browser-check": {
+      "status": "not-run",
+      "execution": "not-requested"
+    },
+    "validate": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": null,
+      "execution": "embedded-in-deliver",
+      "command": [
+        "/opt/homebrew/Cellar/node/25.9.0_1/bin/node",
+        "/Users/chenhui/.kiro/skills/archify/bin/archify.mjs",
+        "deliver",
+        "explainer",
+        "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-superagent-20261112-225214/candidate.archify.md",
+        "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-superagent-20261112-225214/dsh-superagent.html",
+        "--quality",
+        "showcase",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": true,
+        "command": "validate",
+        "specification": {
+          "sha256": "9355b4c367b50882fe699cd7b4fb400dc2616d163e03fdd1bef2d94d31ed519c",
+          "bytes": 6224
+        },
+        "validation": {
+          "checksPassed": 4,
+          "checkCount": 4,
+          "compositionProfile": "showcase",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 0
+        }
+      }
+    },
+    "deliver": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 406,
+      "command": [
+        "/opt/homebrew/Cellar/node/25.9.0_1/bin/node",
+        "/Users/chenhui/.kiro/skills/archify/bin/archify.mjs",
+        "deliver",
+        "explainer",
+        "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-superagent-20261112-225214/candidate.archify.md",
+        "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-superagent-20261112-225214/dsh-superagent.html",
+        "--quality",
+        "showcase",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "receiptId": "6fdc3032-3757-4164-ab89-1850a25cf86d",
+        "ok": true,
+        "command": "deliver",
+        "type": "explainer",
+        "input": "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-superagent-20261112-225214/candidate.archify.md",
+        "output": "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-superagent-20261112-225214/dsh-superagent.html",
+        "explainer": {
+          "preparedSha256": "315093baf7204e8d86fb643d6e91d6e862c9596ff99d6ec6b35a93480257971a",
+          "dependencies": [
+            {
+              "kind": "diagram-spec",
+              "id": "request-flow",
+              "inline": true,
+              "sha256": "2c820a48390628354c2cf688dbc77c6dfd25857d4c7775b4f360309246bf30a6",
+              "bytes": 1613
+            }
+          ]
+        },
+        "specification": {
+          "sha256": "9355b4c367b50882fe699cd7b4fb400dc2616d163e03fdd1bef2d94d31ed519c",
+          "bytes": 6224
+        },
+        "artifact": {
+          "sha256": "9de6dff9104b9f079b10e1ae0013ed01fe489758eb1604818bf8597a77ed3139",
+          "bytes": 582399
+        },
+        "validation": {
+          "checksPassed": 4,
+          "checkCount": 4,
+          "compositionProfile": "showcase",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 0
+        },
+        "update": {
+          "status": "unavailable",
+          "installedVersion": null,
+          "availableVersion": null,
+          "releaseNotes": null,
+          "checkedAt": null,
+          "source": null,
+          "noticeRequired": false,
+          "noticeText": null,
+          "reason": "disabled"
+        }
+      }
+    },
+    "check": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 229,
+      "command": [
+        "/opt/homebrew/Cellar/node/25.9.0_1/bin/node",
+        "/Users/chenhui/.kiro/skills/archify/bin/archify.mjs",
+        "check",
+        "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-superagent-20261112-225214/dsh-superagent.html",
+        "--require-provenance"
+      ],
+      "receipt": {
+        "ok": true,
+        "file": "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-superagent-20261112-225214/dsh-superagent.html",
+        "family": "explainer",
+        "artifact": {
+          "sha256": "9de6dff9104b9f079b10e1ae0013ed01fe489758eb1604818bf8597a77ed3139",
+          "bytes": 582399
+        },
+        "checks": [
+          {
+            "name": "explainer_structure",
+            "ok": true,
+            "details": [
+              "64 unique DOM IDs"
+            ]
+          },
+          {
+            "name": "explainer_payload_identity",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "explainer_dependencies",
+            "ok": true,
+            "details": [
+              "1 frozen dependencies"
+            ]
+          },
+          {
+            "name": "explainer_native_diagrams",
+            "ok": true,
+            "details": [
+              "request-flow: pass"
+            ]
+          }
+        ],
+        "composition": {
+          "schemaVersion": 1,
+          "profile": "showcase",
+          "status": "pass",
+          "summary": {
+            "errors": 0,
+            "warnings": 0
+          },
+          "issues": [],
+          "nativeDiagrams": [
+            {
+              "id": "request-flow",
+              "receipt": {
+                "ok": true,
+                "file": "/var/folders/nz/x3f66fpx0dz9rlncmf4034780000gn/T/archify-explainer-check-mqUdLw/child.html",
+                "artifact": {
+                  "sha256": "02dfbc9b32524197a1017f6a7e8720366a11929056377f2bdea345a25a743d9c",
+                  "bytes": 836378
+                },
+                "checks": [
+                  {
+                    "name": "single_svg",
+                    "ok": true,
+                    "details": [
+                      "found 1 <svg> block(s)"
+                    ]
+                  },
+                  {
+                    "name": "finite_svg",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "orthogonal_arrows",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "label_route_clearance",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "relationship_crossings",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "relationship_corridors",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "container_border_runs",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "route_rhythm",
+                    "ok": true,
+                    "details": []
+                  },
+                  {
+                    "name": "legend_clearance",
+                    "ok": true,
+                    "details": []
+                  }
+                ],
+                "composition": {
+                  "schemaVersion": 1,
+                  "profile": "showcase",
+                  "status": "pass",
+                  "summary": {
+                    "errors": 0,
+                    "warnings": 0
+                  },
+                  "metrics": {
+                    "properCrossings": 0,
+                    "resolvedCrossovers": 0,
+                    "ambiguousCorridors": 0,
+                    "arrowheadCollisions": 0,
+                    "containerBorderRuns": 0,
+                    "labelRouteClearanceIssues": 0,
+                    "labelCanvasOverflowIssues": 0,
+                    "minLabelRouteClearance": 22,
+                    "desktopReadabilityIssues": 0,
+                    "viewportHeightIssues": 0,
+                    "minProjectedNodeTextPx": 7.622950819672131,
+                    "maxBends": 0,
+                    "routesOverSuggestedBends": 0,
+                    "maxStretch": 1,
+                    "routesOverSuggestedStretch": 0,
+                    "minSegmentPx": 8,
+                    "minInteriorSegmentPx": null,
+                    "shortSegmentCount": 2,
+                    "shortEndpointSegmentCount": 2,
+                    "shortInteriorSegmentCount": 0,
+                    "microSegmentCount": 0
+                  },
+                  "suggestedLimits": {
+                    "bendsPerRelationship": 2,
+                    "stretch": 1.35,
+                    "segmentPx": 16,
+                    "microSegmentPx": 8
+                  },
+                  "routeReview": {
+                    "crossings": [],
+                    "detours": []
+                  },
+                  "leadingSpace": {
+                    "measured": false,
+                    "reviewSuggested": false
+                  },
+                  "desktopReadability": {
+                    "budgetBasis": "legacy-930",
+                    "readerContract": "declared-wide-v1",
+                    "availableDiagramWidth": 930,
+                    "actualBudgetPx": 930,
+                    "limit": "legacy",
+                    "requestedTargetPx": null,
+                    "requestedTargetMet": null,
+                    "hardFloorPx": 6,
+                    "hardFloorMet": true,
+                    "minimumOwner": {
+                      "kind": "edge",
+                      "id": "eval-to-drop-1",
+                      "from": "eval",
+                      "to": "drop"
+                    },
+                    "minimumSourceTextPx": 8,
+                    "minimumProjectedTextPx": 7.622950819672131,
+                    "semanticTextCount": 14
+                  },
+                  "issues": []
+                }
+              }
+            }
+          ]
+        },
+        "diagnostics": [],
+        "provenance": "current",
+        "deliveryReceiptId": "6fdc3032-3757-4164-ab89-1850a25cf86d"
+      }
+    }
+  },
+  "browserCheck": {
+    "requested": false,
+    "ran": false
+  },
+  "diagnostics": [],
+  "evidence": {
+    "receipt": "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-superagent-20261112-225214/dsh-superagent.finalize.json",
+    "summaryReceipt": "/Users/chenhui/Downloads/learn/meiqiu/.archify/explainer-superagent-20261112-225214/dsh-superagent.finalize-summary.json"
+  },
+  "visualReview": "not-requested",
+  "finishedAt": "2026-11-12T14:53:35.326Z",
+  "durationMs": 704,
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-02T15:13:51.764Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  }
+}
