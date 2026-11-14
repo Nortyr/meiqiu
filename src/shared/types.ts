@@ -126,7 +126,17 @@ export interface SkillProduct {
 // 消息流事件（主进程推给界面）
 export type ChatEvent =
   | { type: 'text'; text: string } // assistant 流式文本块
-  | { type: 'tool'; id: string; title: string; kind?: string; status: string }
+  | {
+      type: 'tool'
+      id: string
+      title: string
+      kind?: string
+      status: string
+      rawInput?: unknown
+      rawOutput?: unknown
+      content?: unknown
+      locations?: unknown
+    }
   | { type: 'turn_end'; stopReason: string }
   | { type: 'error'; message: string }
 
@@ -223,6 +233,138 @@ export interface IngestReport {
   backupPath?: string
 }
 
+// ---- ACP 权限请求 ----
+
+export type PermissionOptionKind =
+  'allow_once' | 'allow_always' | 'reject_once' | 'reject_always' | string
+
+export interface PermissionOption {
+  optionId: string
+  name: string
+  kind: PermissionOptionKind
+}
+
+export interface PermissionToolCall {
+  title?: string
+  kind?: string
+  locations?: unknown
+  content?: unknown
+  rawInput?: unknown
+}
+
+export interface PermissionRequest {
+  requestId: string
+  provider: AcpProvider
+  toolCall: PermissionToolCall
+  options: PermissionOption[]
+  createdAt: string
+}
+
+export interface PermissionDecision {
+  requestId: string
+  optionId?: string
+  cancelled?: boolean
+}
+
+// ---- 自动化（Brief → Plan → Run → Capability）----
+
+export type WorkflowStepType = 'agent' | 'verify' | 'review' | 'approval'
+export type WorkflowVerifierType = 'command' | 'artifact' | 'diff' | 'review' | 'human'
+export type WorkflowRunStatus =
+  | 'queued'
+  | 'running'
+  | 'waiting_input'
+  | 'needs_reconciliation'
+  | 'succeeded'
+  | 'failed'
+  | 'cancelled'
+  | 'interrupted'
+
+export interface WorkflowStep {
+  id: string
+  index: number
+  type: WorkflowStepType
+  text: string
+  verifierIds?: string[]
+}
+
+export interface WorkflowVerifier {
+  id: string
+  type: WorkflowVerifierType
+  name: string
+  command?: string
+  path?: string
+  expectedHash?: string
+  denyPaths?: string[]
+  timeoutMs?: number
+}
+
+export interface WorkflowRetryPolicy {
+  retryFromStepId: string
+  maxRounds: number
+  maxMinutes: number
+}
+
+export interface WorkflowPlanDraft {
+  id: string
+  version: number
+  name: string
+  brief: string
+  goal: string
+  cwd: string
+  provider: AcpProvider
+  model?: string
+  permissionMode: string
+  permissionConfigPath: string
+  steps: WorkflowStep[]
+  verifiers: WorkflowVerifier[]
+  retryPolicy: WorkflowRetryPolicy
+  forbidden: string[] // v1 是声明边界，不是代码强制策略
+  createdAt: string
+}
+
+export interface WorkflowPlanRequest {
+  brief: string
+  cwd: string
+}
+
+export interface WorkflowStepRun {
+  id: string
+  stepId: string
+  stepIndex: number
+  round: number
+  status: 'running' | 'succeeded' | 'failed' | 'cancelled'
+  startedAt: string
+  completedAt?: string
+  inputRef?: string
+  outputRef?: string
+  rawLogPath?: string
+  error?: string
+}
+
+export interface WorkflowRun {
+  id: string
+  planId: string
+  planVersion: number
+  plan: WorkflowPlanDraft
+  status: WorkflowRunStatus
+  currentStepId?: string
+  round: number
+  startedAt: string
+  completedAt?: string
+  error?: string
+  reportPath?: string
+  stepRuns: WorkflowStepRun[]
+}
+
+export interface WorkflowCapability {
+  id: string
+  name: string
+  plan: WorkflowPlanDraft
+  createdAt: string
+  sourceRunId: string
+}
+
 // preload 暴露给界面的接口
 export interface MeiqiuApi {
   listMemories(): Promise<MemoriesResult>
@@ -236,6 +378,9 @@ export interface MeiqiuApi {
   // 发一轮对话；流式消息走 onChatEvent
   chatSend(text: string): Promise<void>
   onChatEvent(cb: (e: ChatEvent) => void): () => void
+  // ACP Harness 主动询问权限时转给用户；Meiqiu 不自动选 allow_always
+  onPermissionRequest(cb: (request: PermissionRequest) => void): () => void
+  respondPermission(decision: PermissionDecision): Promise<boolean>
   listSkills(): Promise<SkillProduct[]>
   // 提取 skill 的预填指令（主进程拼接，引用内置 skill-creator 的路径）
   skillExtractInstruction(session: SessionInfo): Promise<string>
@@ -255,4 +400,15 @@ export interface MeiqiuApi {
   // 程序体检：跑一次 / 拿最近一次报告
   wikiLint(): Promise<LintReport>
   wikiLintLatest(): Promise<LintReport | null>
+  // 自动化：完整 Brief → 计划草案 → durable Run → 成功后保存能力
+  workflowPlan(request: WorkflowPlanRequest): Promise<WorkflowPlanDraft>
+  workflowCreateWorkspace(): Promise<string>
+  workflowStart(plan: WorkflowPlanDraft): Promise<WorkflowRun>
+  workflowGetRun(runId: string): Promise<WorkflowRun | null>
+  workflowListRuns(): Promise<WorkflowRun[]>
+  workflowCancel(runId: string): Promise<void>
+  workflowReadArtifact(runId: string, path: string): Promise<string>
+  workflowSaveCapability(runId: string): Promise<WorkflowCapability>
+  workflowListCapabilities(): Promise<WorkflowCapability[]>
+  onWorkflowChanged(cb: (runId: string) => void): () => void
 }

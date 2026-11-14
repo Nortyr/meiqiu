@@ -2,12 +2,14 @@ import { useState } from 'react'
 import MemoriesPage from './pages/MemoriesPage'
 import SessionsPage from './pages/SessionsPage'
 import WikiPage from './pages/WikiPage'
+import AutomationPage from './pages/AutomationPage'
 import SettingsPage from './pages/SettingsPage'
+import PermissionCenter from './components/PermissionCenter'
 import { SettingsProvider, useSettings } from './state/settings'
 import { ChatProvider } from './chat/chat'
 import type { SessionInfo } from '../../shared/types'
 
-type Page = 'memories' | 'sessions' | 'wiki' | 'settings'
+type Page = 'memories' | 'sessions' | 'wiki' | 'automation' | 'settings'
 
 // 导航项：label 从 i18n 字典取，NAV 只放 id 和图标
 const NAV: { id: Page; icon: React.JSX.Element }[] = [
@@ -54,6 +56,22 @@ const NAV: { id: Page; icon: React.JSX.Element }[] = [
       >
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4a2 2 0 0 0-2-2H6.5A2.5 2.5 0 0 0 4 4.5v15z" />
         <path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5" />
+      </svg>
+    )
+  },
+  {
+    id: 'automation',
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M5 6h8M5 12h12M5 18h7" />
+        <path d="m16 15 3 3-3 3" />
       </svg>
     )
   },
@@ -114,9 +132,11 @@ function Shell(): React.JSX.Element {
               }}
             />
           )}
+          {page === 'automation' && <AutomationPage />}
           {page === 'settings' && <SettingsPage />}
         </main>
       </div>
+      <PermissionCenter />
     </div>
   )
 }

@@ -10,9 +10,16 @@ import { mainT } from './i18n'
 import { getWikiPage, initWiki, listWiki, searchWikiPages, watchWiki } from './wiki'
 import { finishIngest, prepareIngest, rollbackIngest } from './wiki/ingest'
 import { latestLint, runLint } from './wiki/lint'
+import { ensureWorkflowStore, workflowService } from './workflows'
 import { homedir } from 'node:os'
 import { isAcpEnabled, saveSettings, toResult } from './settings'
-import type { AcpConfigPatch, SessionInfo } from '../shared/types'
+import type {
+  AcpConfigPatch,
+  PermissionDecision,
+  SessionInfo,
+  WorkflowPlanDraft,
+  WorkflowPlanRequest
+} from '../shared/types'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -73,8 +80,9 @@ app.whenReady().then(() => {
   // 知识库：建 vault、重建索引、自检。失败不拖垮 app 启动
   try {
     initWiki()
+    ensureWorkflowStore()
   } catch (e) {
-    console.error('[wiki] 初始化失败', e)
+    console.error('[storage] 初始化失败', e)
   }
 
   ipcMain.handle('memories:list', () => listMemories())
@@ -96,6 +104,27 @@ app.whenReady().then(() => {
   // 知识库体检
   ipcMain.handle('wiki:lint', () => runLint())
   ipcMain.handle('wiki:lint-latest', () => latestLint())
+
+  // 自动化：规划在独立 ACP session 中生成 plan.json；Runner 全程由主进程持有。
+  ipcMain.handle('workflow:plan', (_e, request: WorkflowPlanRequest) =>
+    workflowService.plan(request)
+  )
+  ipcMain.handle('workflow:create-workspace', () => workflowService.createWorkspace())
+  ipcMain.handle('workflow:start', (_e, plan: WorkflowPlanDraft) => workflowService.start(plan))
+  ipcMain.handle('workflow:get-run', (_e, runId: string) => workflowService.getRun(runId))
+  ipcMain.handle('workflow:list-runs', () => workflowService.listRuns())
+  ipcMain.handle('workflow:cancel', (_e, runId: string) => workflowService.cancel(runId))
+  ipcMain.handle('workflow:read-artifact', (_e, runId: string, path: string) =>
+    workflowService.readArtifact(runId, path)
+  )
+  ipcMain.handle('workflow:save-capability', (_e, runId: string) =>
+    workflowService.saveCapability(runId)
+  )
+  ipcMain.handle('workflow:list-capabilities', () => workflowService.listCapabilities())
+
+  ipcMain.handle('permission:respond', (_e, decision: PermissionDecision) => {
+    return workflowService.respondPermission(decision) || acpClient.respondPermission(decision)
+  })
 
   // ACP 聊天：只有在设置里启用了才连；connect 复用已有会话。
   // forceNew = true 时保留进程、强制换一个全新的会话（界面「新对话」/ 换会话上下文）
@@ -138,6 +167,19 @@ app.whenReady().then(() => {
       if (!win.isDestroyed()) win.webContents.send('chat:event', ev)
     }
   })
+  const broadcastPermission = (request: unknown): void => {
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) win.webContents.send('permission:request', request)
+    }
+  }
+  acpClient.on('permission', broadcastPermission)
+  workflowService.on('permission', broadcastPermission)
+  workflowService.on('changed', (runId: string) => {
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) win.webContents.send('workflow:changed', runId)
+    }
+  })
+  workflowService.on('log', (msg) => console.error('[workflow]', msg))
   // adapter 的 stderr / 进程退出打到主进程控制台，排查连接问题用
   acpClient.on('log', (msg) => console.error('[acp]', msg))
 

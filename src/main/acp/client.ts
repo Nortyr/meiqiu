@@ -1,24 +1,25 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { EventEmitter } from 'node:events'
-import type { ChatEvent } from '../../shared/types'
+import type {
+  AcpProvider,
+  ChatEvent,
+  PermissionDecision,
+  PermissionRequest
+} from '../../shared/types'
 import {
   acpEnv,
   acpProvider,
   acpSavedModel,
   detectHarnessPath,
-  harnessPathOf,
+  harnessPathFor,
   getSettings
 } from '../settings'
 import { mainT } from '../i18n'
 
-// ACP（Agent Client Protocol）客户端：spawn claude-agent-acp 子进程，
-// 走 stdio 的换行分隔 JSON-RPC。只管 Claude Code 一家。
-// 推到界面的事件契约是 shared/types.ts 的 ChatEvent（唯一出处，别在这里再定义）
-
 interface JsonRpcMessage {
   jsonrpc: '2.0'
-  id?: number
+  id?: number | string
   method?: string
   params?: Record<string, unknown>
   result?: unknown
@@ -28,9 +29,15 @@ interface JsonRpcMessage {
 interface PendingRequest {
   resolve: (result: unknown) => void
   reject: (error: Error) => void
+  timer: ReturnType<typeof setTimeout>
 }
 
-// session/new 返回的 configOptions 里 id 为 model 的那一项（opencode；别家可能没有）
+interface PendingPermission {
+  rpcId: number | string
+  timer: ReturnType<typeof setTimeout>
+  request: PermissionRequest
+}
+
 interface SessionConfigOption {
   id: string
   type?: string
@@ -38,19 +45,57 @@ interface SessionConfigOption {
   options?: { value: string; name?: string }[]
 }
 
+export interface CollectedPrompt {
+  text: string
+  tools: Extract<ChatEvent, { type: 'tool' }>[]
+  stopReason: string
+}
+
+const SECRET_KEY = /(token|secret|password|authorization|api[-_]?key|cookie)/i
+
+function sanitizeToolValue(value: unknown, depth = 0, key = ''): unknown {
+  if (SECRET_KEY.test(key)) return '[redacted]'
+  if (depth > 6) return '[truncated]'
+  if (typeof value === 'string')
+    return value.length > 100_000 ? `${value.slice(0, 100_000)}\n[truncated]` : value
+  if (Array.isArray(value))
+    return value.slice(0, 200).map((item) => sanitizeToolValue(item, depth + 1))
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .slice(0, 200)
+        .map(([childKey, child]) => [childKey, sanitizeToolValue(child, depth + 1, childKey)])
+    )
+  }
+  return value
+}
+
+// 每个 Workflow Run 使用独立实例；界面聊天继续使用文件末尾的全局实例。
 export class AcpClient extends EventEmitter {
   private proc: ChildProcess | null = null
   private buffer = ''
   private nextId = 1
   private pending = new Map<number, PendingRequest>()
+  private pendingPermissions = new Map<string, PendingPermission>()
   private _sessionId: string | null = null
   private modelOption: SessionConfigOption | null = null
+  private connecting: Promise<string> | null = null
+
+  constructor(
+    private readonly providerOverride?: AcpProvider,
+    private readonly modelOverride?: string
+  ) {
+    super()
+  }
+
+  get provider(): AcpProvider {
+    return this.providerOverride ?? acpProvider()
+  }
 
   get sessionId(): string | null {
     return this._sessionId
   }
 
-  // 当前会话的可选模型；没连上或那家不提供时为 null
   getModels(): { current: string; options: { value: string; name: string }[] } | null {
     if (!this._sessionId || !this.modelOption?.options) return null
     return {
@@ -59,7 +104,6 @@ export class AcpClient extends EventEmitter {
     }
   }
 
-  // 走 ACP 的 session/set_config_option 换模型
   async setModel(value: string): Promise<void> {
     if (!this._sessionId) throw new Error(mainT('notConnected'))
     const result = (await this.request('session/set_config_option', {
@@ -70,11 +114,6 @@ export class AcpClient extends EventEmitter {
     const opt = result.configOptions?.find((o) => o.id === 'model')
     if (opt) this.modelOption = opt
   }
-
-  // 起进程 + initialize + session/new，返回 sessionId。重复调用复用现有会话。
-  // 并发保护：两个并发 connect（自动重连 + 用户点发送）只会 spawn 一个进程，
-  // 否则先完成的 sessionId 会被后完成的覆盖，第一个进程泄漏
-  private connecting: Promise<string> | null = null
 
   async connect(cwd: string): Promise<string> {
     if (this._sessionId) return this._sessionId
@@ -87,33 +126,27 @@ export class AcpClient extends EventEmitter {
     }
   }
 
-  // 不换进程、只换会话：界面「新对话」/ 换上下文时用。
-  // 进程不在就退化成完整 connect
   async newSession(cwd: string): Promise<string> {
     if (!this.proc) return this.connect(cwd)
     return this.startSession(cwd)
   }
 
   private async doConnect(cwd: string): Promise<string> {
-    const provider = acpProvider()
-    const harnessPath = harnessPathOf(getSettings()).trim()
+    const provider = this.provider
+    const harnessPath = harnessPathFor(getSettings(), provider).trim()
     if (provider === 'opencode') {
-      // opencode 自带 acp 子命令，直接就是 ACP server；没配置就自动检测
       const bin = harnessPath || detectHarnessPath('opencode') || 'opencode'
       this.proc = spawn(bin, ['acp'], {
-        env: { ...process.env, ...acpEnv() },
+        env: { ...process.env, ...acpEnv(provider, this.modelOverride) },
         stdio: ['pipe', 'pipe', 'pipe']
       })
     } else if (provider === 'kiro') {
-      // kiro-cli 有隐藏的 acp 子命令（help 里不列，但存在），同 opencode 的路数
       const bin = harnessPath || detectHarnessPath('kiro-cli') || 'kiro-cli'
       this.proc = spawn(bin, ['acp'], {
-        env: { ...process.env, ...acpEnv() },
+        env: { ...process.env, ...acpEnv(provider, this.modelOverride) },
         stdio: ['pipe', 'pipe', 'pipe']
       })
     } else {
-      // claude-code / codex 走 npm 的 ACP adapter，用 Electron 当 Node 跑
-      // acpEnv() 是用户在设置里填的 CLI 路径 / 模型
       const require = createRequire(import.meta.url)
       const pkg =
         provider === 'codex'
@@ -121,23 +154,26 @@ export class AcpClient extends EventEmitter {
           : '@agentclientprotocol/claude-agent-acp/dist/index.js'
       const bin = require.resolve(pkg)
       this.proc = spawn(process.execPath, [bin], {
-        env: { ...process.env, ...acpEnv(), ELECTRON_RUN_AS_NODE: '1' },
+        env: { ...process.env, ...acpEnv(provider), ELECTRON_RUN_AS_NODE: '1' },
         stdio: ['pipe', 'pipe', 'pipe']
       })
     }
-    this.proc.stderr!.on('data', (d) => this.emit('log', String(d)))
-    // CLI 不存在等 spawn 失败：转成 Promise 拒绝，别让主进程崩
-    this.proc.on('error', (err) => {
+
+    const proc = this.proc
+    proc.stderr!.on('data', (d) => this.emit('log', String(d)))
+    proc.on('error', (err) => {
       this.emit('log', `spawn 失败: ${err.message}`)
-      for (const p of this.pending.values()) p.reject(err)
-      this.pending.clear()
+      this.rejectPending(err)
       this.dispose()
     })
-    this.proc.on('exit', (code) => {
+    proc.on('exit', (code) => {
       this.emit('log', `adapter 退出 code=${code}`)
-      this.dispose()
+      if (this.proc === proc) this.proc = null
+      this.rejectPending(new Error(mainT('disconnected')))
+      this.clearSessionState()
+      this.emit('disposed')
     })
-    this.proc.stdout!.on('data', (chunk) => this.onData(String(chunk)))
+    proc.stdout!.on('data', (chunk) => this.onData(String(chunk)))
 
     await this.request('initialize', {
       protocolVersion: 1,
@@ -146,17 +182,15 @@ export class AcpClient extends EventEmitter {
     return this.startSession(cwd)
   }
 
-  // session/new + 下发 app 里保存的模型。connect 和 newSession 共用
   private async startSession(cwd: string): Promise<string> {
-    const provider = acpProvider()
+    const provider = this.provider
     const result = (await this.request('session/new', { cwd, mcpServers: [] })) as {
       sessionId: string
       configOptions?: SessionConfigOption[]
     }
     this._sessionId = result.sessionId
     this.modelOption = result.configOptions?.find((o) => o.id === 'model') ?? null
-    // opencode/codex/kiro 的模型在 app 里配：连上后把保存的模型下发下去
-    const savedModel = acpSavedModel(provider)
+    const savedModel = this.modelOverride?.trim() || acpSavedModel(provider)
     if (
       savedModel &&
       savedModel !== this.modelOption?.currentValue &&
@@ -165,24 +199,82 @@ export class AcpClient extends EventEmitter {
       try {
         await this.setModel(savedModel)
       } catch {
-        // 下发失败就用那家自己的默认模型，不挡聊天
+        // 下发失败就用 Harness 默认模型，不阻断任务。
       }
     }
     return this._sessionId
   }
 
-  // 发一轮对话。消息和工具调用通过 'event' 以 ChatEvent 推出来；
-  // session/prompt 返回时回合已结束，发 turn_end 让界面复位（不发的话界面会一直转圈）
-  async prompt(text: string): Promise<void> {
+  async prompt(text: string, timeoutMs = 30 * 60_000): Promise<void> {
     if (!this._sessionId) throw new Error(mainT('notConnected'))
-    const result = (await this.request('session/prompt', {
-      sessionId: this._sessionId,
-      prompt: [{ type: 'text', text }]
-    })) as { stopReason?: string }
+    const result = (await this.request(
+      'session/prompt',
+      {
+        sessionId: this._sessionId,
+        prompt: [{ type: 'text', text }]
+      },
+      timeoutMs
+    )) as { stopReason?: string }
     this.emit('event', {
       type: 'turn_end',
       stopReason: result?.stopReason ?? 'end_turn'
     } satisfies ChatEvent)
+  }
+
+  async promptCollect(text: string, timeoutMs = 30 * 60_000): Promise<CollectedPrompt> {
+    let output = ''
+    const tools: CollectedPrompt['tools'] = []
+    let stopReason = 'end_turn'
+    const listener = (event: ChatEvent): void => {
+      if (event.type === 'text') output += event.text
+      else if (event.type === 'tool') {
+        const index = tools.findIndex((tool) => tool.id === event.id)
+        if (index === -1) tools.push(event)
+        else {
+          const previous = tools[index]
+          tools[index] = {
+            ...previous,
+            ...Object.fromEntries(
+              Object.entries(event).filter(([, value]) => value !== undefined && value !== '')
+            )
+          } as Extract<ChatEvent, { type: 'tool' }>
+        }
+      } else if (event.type === 'turn_end') stopReason = event.stopReason
+    }
+    this.on('event', listener)
+    try {
+      await this.prompt(text, timeoutMs)
+      return { text: output, tools, stopReason }
+    } finally {
+      this.off('event', listener)
+    }
+  }
+
+  cancelPrompt(): void {
+    if (!this._sessionId) return
+    this.send({
+      jsonrpc: '2.0',
+      method: 'session/cancel',
+      params: { sessionId: this._sessionId }
+    })
+  }
+
+  respondPermission(decision: PermissionDecision): boolean {
+    const pending = this.pendingPermissions.get(decision.requestId)
+    if (!pending) return false
+    this.pendingPermissions.delete(decision.requestId)
+    clearTimeout(pending.timer)
+    const valid = pending.request.options.some((o) => o.optionId === decision.optionId)
+    this.send({
+      jsonrpc: '2.0',
+      id: pending.rpcId,
+      result:
+        !decision.cancelled && decision.optionId && valid
+          ? { outcome: { outcome: 'selected', optionId: decision.optionId } }
+          : { outcome: { outcome: 'cancelled' } }
+    })
+    this.emit('permission-resolved', decision.requestId)
+    return true
   }
 
   private onData(chunk: string): void {
@@ -198,16 +290,15 @@ export class AcpClient extends EventEmitter {
         this.emit('log', `无法解析的行: ${line.slice(0, 120)}`)
         continue
       }
-      if (msg.id !== undefined && (msg.result !== undefined || msg.error !== undefined)) {
-        // 响应
+      if (typeof msg.id === 'number' && (msg.result !== undefined || msg.error !== undefined)) {
         const p = this.pending.get(msg.id)
         if (p) {
           this.pending.delete(msg.id)
+          clearTimeout(p.timer)
           if (msg.error) p.reject(new Error(msg.error.message))
           else p.resolve(msg.result)
         }
       } else if (msg.method && msg.id !== undefined) {
-        // agent 发来的请求（权限确认等）
         this.onAgentRequest(msg)
       } else if (msg.method) {
         this.onNotification(msg)
@@ -215,26 +306,42 @@ export class AcpClient extends EventEmitter {
     }
   }
 
-  // agent 问「这个工具调用允许吗」：一期自动选第一个 allow 选项，界面能看到工具调用过程
   private onAgentRequest(msg: JsonRpcMessage): void {
-    if (msg.method === 'session/request_permission') {
-      const params = msg.params as { options?: { optionId: string; kind?: string }[] }
-      const options = params.options ?? []
-      const allow =
-        options.find((o) => o.kind === 'allow_always') ??
-        options.find((o) => o.kind === 'allow_once') ??
-        options[0]
-      this.send({
-        jsonrpc: '2.0',
-        id: msg.id,
-        result: allow
-          ? { outcome: { outcome: 'selected', optionId: allow.optionId } }
-          : { outcome: { outcome: 'cancelled' } }
-      })
-    } else {
-      // 其他请求（fs 读写等，我们声明了不支持）回方法不存在
+    if (msg.method !== 'session/request_permission') {
       this.send({ jsonrpc: '2.0', id: msg.id, error: { code: -32601, message: 'not supported' } })
+      return
     }
+
+    const params = (msg.params ?? {}) as {
+      toolCall?: Record<string, unknown>
+      options?: { optionId?: string; name?: string; kind?: string }[]
+    }
+    const toolCall = params.toolCall ?? {}
+    const requestId = crypto.randomUUID()
+    const request: PermissionRequest = {
+      requestId,
+      provider: this.provider,
+      toolCall: {
+        title: typeof toolCall.title === 'string' ? toolCall.title : undefined,
+        kind: typeof toolCall.kind === 'string' ? toolCall.kind : undefined,
+        locations: sanitizeToolValue(toolCall.locations),
+        content: sanitizeToolValue(toolCall.content),
+        rawInput: sanitizeToolValue(toolCall.rawInput)
+      },
+      options: (params.options ?? [])
+        .filter((o): o is { optionId: string; name?: string; kind?: string } => Boolean(o.optionId))
+        .map((o) => ({
+          optionId: o.optionId,
+          name: o.name ?? o.kind ?? o.optionId,
+          kind: o.kind ?? ''
+        })),
+      createdAt: new Date().toISOString()
+    }
+    const timer = setTimeout(() => {
+      this.respondPermission({ requestId, cancelled: true })
+    }, 5 * 60_000)
+    this.pendingPermissions.set(requestId, { rpcId: msg.id!, timer, request })
+    this.emit('permission', request)
   }
 
   private onNotification(msg: JsonRpcMessage): void {
@@ -253,15 +360,27 @@ export class AcpClient extends EventEmitter {
         id: String(update.toolCallId ?? ''),
         title: String(update.title ?? ''),
         kind: typeof update.kind === 'string' ? update.kind : undefined,
-        status: String(update.status ?? 'pending')
+        status: String(update.status ?? 'pending'),
+        rawInput: sanitizeToolValue(update.rawInput),
+        rawOutput: sanitizeToolValue(update.rawOutput),
+        content: sanitizeToolValue(update.content),
+        locations: sanitizeToolValue(update.locations)
       } satisfies ChatEvent)
     }
   }
 
-  private request(method: string, params: Record<string, unknown>): Promise<unknown> {
+  private request(
+    method: string,
+    params: Record<string, unknown>,
+    timeoutMs = 60_000
+  ): Promise<unknown> {
     const id = this.nextId++
     return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject })
+      const timer = setTimeout(() => {
+        this.pending.delete(id)
+        reject(new Error(`${method} timed out after ${timeoutMs}ms`))
+      }, timeoutMs)
+      this.pending.set(id, { resolve, reject, timer })
       this.send({ jsonrpc: '2.0', id, method, params })
     })
   }
@@ -270,15 +389,33 @@ export class AcpClient extends EventEmitter {
     this.proc?.stdin?.write(JSON.stringify(msg) + '\n')
   }
 
-  dispose(): void {
-    for (const p of this.pending.values()) p.reject(new Error(mainT('disconnected')))
+  private rejectPending(error: Error): void {
+    for (const p of this.pending.values()) {
+      clearTimeout(p.timer)
+      p.reject(error)
+    }
     this.pending.clear()
+    for (const p of this.pendingPermissions.values()) clearTimeout(p.timer)
+    this.pendingPermissions.clear()
+  }
+
+  private clearSessionState(): void {
     this._sessionId = null
     this.modelOption = null
-    if (this.proc) {
-      this.proc.kill()
-      this.proc = null
+    this.connecting = null
+  }
+
+  dispose(): void {
+    this.cancelPrompt()
+    for (const requestId of [...this.pendingPermissions.keys()]) {
+      this.respondPermission({ requestId, cancelled: true })
     }
+    this.rejectPending(new Error(mainT('disconnected')))
+    this.clearSessionState()
+    const proc = this.proc
+    this.proc = null
+    if (proc) proc.kill()
+    this.emit('disposed')
   }
 }
 

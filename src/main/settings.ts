@@ -36,8 +36,12 @@ const PATH_KEYS: Record<
   kiro: 'acpKiroPath'
 }
 
+export function harnessPathFor(s: AcpConfig, provider: AcpProvider): string {
+  return s[PATH_KEYS[provider]] ?? ''
+}
+
 export function harnessPathOf(s: AcpConfig): string {
-  return s[PATH_KEYS[s.acpProvider ?? 'claude-code']] ?? ''
+  return harnessPathFor(s, s.acpProvider ?? 'claude-code')
 }
 
 function readFile(): AcpConfig {
@@ -72,6 +76,10 @@ const ENABLED_KEYS: Record<
 
 function enabledOf(s: AcpConfig, provider: AcpProvider): boolean {
   return s[ENABLED_KEYS[provider]] === true
+}
+
+export function isProviderEnabled(provider: AcpProvider): boolean {
+  return enabledOf(readFile(), provider)
 }
 
 // 当前选中的那家是否启用（决定连不连、输入条出不出现）
@@ -120,15 +128,19 @@ export function detectHarnessPath(bin: 'claude' | 'opencode' | 'codex' | 'kiro-c
 }
 
 // spawn adapter 时要带上的环境变量（只放用户填了的）
-export function acpEnv(): Record<string, string> {
+export function acpEnv(
+  provider: AcpProvider = acpProvider(),
+  modelOverride?: string
+): Record<string, string> {
   const s = readFile()
   const env: Record<string, string> = {}
   // 用户配了 CLI 的位置就把它所在目录放到 PATH 最前
-  const hp = harnessPathOf(s).trim()
+  const hp = harnessPathFor(s, provider).trim()
   if (hp) env.PATH = `${dirname(hp)}:${process.env.PATH ?? ''}`
-  // 模型只对 Claude Code 生效；opencode/codex 的模型走 ACP 下发
-  if (s.acpModel?.trim() && (s.acpProvider ?? 'claude-code') === 'claude-code') {
-    env.ANTHROPIC_MODEL = s.acpModel.trim()
+  // 模型只对 Claude Code 生效；opencode/codex/kiro 的模型走 ACP 下发
+  const claudeModel = modelOverride?.trim() || s.acpModel?.trim()
+  if (claudeModel && provider === 'claude-code') {
+    env.ANTHROPIC_MODEL = claudeModel
   }
   return env
 }
@@ -144,6 +156,26 @@ export function acpSavedModel(provider: AcpProvider): string {
 
 export function acpProvider(): AcpProvider {
   return readFile().acpProvider ?? 'claude-code'
+}
+
+export function harnessPermissionInfo(provider: AcpProvider): {
+  mode: string
+  configPath: string
+} {
+  const candidates: Record<AcpProvider, string[]> = {
+    'claude-code': [
+      join(homedir(), '.claude', 'settings.local.json'),
+      join(homedir(), '.claude', 'settings.json')
+    ],
+    codex: [join(homedir(), '.codex', 'config.toml')],
+    opencode: [join(homedir(), '.config', 'opencode', 'opencode.json')],
+    kiro: [join(homedir(), '.kiro', 'settings.json')]
+  }
+  const configPath = candidates[provider].find(existsSync) ?? candidates[provider][0]
+  return {
+    mode: existsSync(configPath) ? '用户配置 + Harness/adapter 默认' : 'Harness/adapter 默认',
+    configPath
+  }
 }
 
 export function toResult(connected: boolean): SettingsResult {

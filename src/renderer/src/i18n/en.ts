@@ -6,6 +6,7 @@ export const en: Dict = {
     memories: 'Memories',
     sessions: 'Sessions',
     wiki: 'Wiki',
+    automation: 'Automation',
     settings: 'Settings'
   },
   common: {
@@ -86,6 +87,91 @@ export const en: Dict = {
     noSkills: 'No skills in this directory',
     contextPrefix: (path, agent, text) =>
       `Read the session file at ${path} (a past ${agent} session), then answer: ${text}`
+  },
+  permissions: {
+    title: 'Harness permission request',
+    pending: (n) => `${n} pending`,
+    unknownTool: 'Tool name unavailable',
+    noDetail: 'This Harness did not provide the full command or path.',
+    remember: 'remember',
+    rememberWarning: 'The Harness will store this decision and may stop asking',
+    cancel: 'Cancel this action'
+  },
+  automation: {
+    newTask: 'New task',
+    recentRuns: 'Recent runs',
+    noRuns: 'No runs yet',
+    capabilities: 'Capabilities',
+    kicker: 'Goal delegation',
+    title: 'Give MeiQiu a complete goal',
+    lead: 'Describe the goal, your proposed approach, context, and limits. MeiQiu creates a reviewable plan before changing anything.',
+    enableAcp: 'Enable an ACP Harness in Settings before using automation.',
+    workspace: 'Working directory',
+    workspacePlaceholder: 'Choose an existing directory or create a temporary workspace',
+    createWorkspace: 'New temporary workspace',
+    creatingWorkspace: 'Creating…',
+    workspaceHint:
+      'Use a temporary workspace for non-project tasks. It lives under ~/.meiqiu/workspaces/.',
+    brief: 'Complete task brief',
+    briefPlaceholder:
+      'Example: Upgrade a project to React 19, or listen for Lark messages and save events in the workspace. Include your approach, limits, and completion criteria.',
+    briefHint:
+      'Planning only reads the project and may write plan.json only in MeiQiu’s draft directory.',
+    planning: 'Planning…',
+    makePlan: 'Create plan',
+    planDraft: 'Plan to confirm',
+    discard: 'Discard',
+    goal: 'Goal',
+    structure: 'Execution structure',
+    structureHint: 'Read only · Click a node to find its step',
+    steps: 'Execution list',
+    addAction: 'Add action',
+    addCheck: 'Add check',
+    removeStep: 'Remove step',
+    newActionText: 'Describe the work for the Agent',
+    newCheckText: 'Run the confirmed verifiers',
+    verifiers: 'Completion evidence',
+    limits: 'Limits',
+    rounds: 'Max rounds',
+    minutes: 'Max minutes',
+    boundaries: 'Declared boundaries',
+    boundaryNote:
+      'In v1 these boundaries instruct the Agent; MeiQiu does not enforce them in code.',
+    executionEnvironment: 'Execution environment',
+    permissionMode: 'Permission source',
+    permissionInherited:
+      'Permissions follow the current Harness configuration. Requests appear as decision cards.',
+    freezeHint: 'Starting freezes the plan, commands, Harness, model, and working directory.',
+    starting: 'Starting…',
+    start: 'Start run',
+    runLabel: (round) => `Round ${round}`,
+    roundLabel: (round) => `Round ${round}`,
+    cancelRun: 'Cancel',
+    saveCapability: 'Save as capability',
+    savedCapability: 'Saved as capability',
+    stopped: 'The run stopped here',
+    reconciliationHint:
+      'The Agent may have changed files before the response was interrupted. MeiQiu will not replay it automatically; inspect the workspace diff first.',
+    evidence: 'Result evidence',
+    viewLog: 'View raw output',
+    hideLog: 'Hide raw output',
+    loadingLog: 'Loading raw output…',
+    stepTypes: {
+      agent: 'Action',
+      verify: 'Check',
+      review: 'Review',
+      approval: 'Human'
+    },
+    statuses: {
+      queued: 'Queued',
+      running: 'Running',
+      waiting_input: 'Needs input',
+      needs_reconciliation: 'Needs reconciliation',
+      succeeded: 'Succeeded',
+      failed: 'Not passed',
+      cancelled: 'Cancelled',
+      interrupted: 'Interrupted'
+    }
   },
   wiki: {
     searchPlaceholder: 'Search the wiki…',
